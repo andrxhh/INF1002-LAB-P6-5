@@ -1,0 +1,7 @@
+[project]
+name = "phishguard"
+version = "0.1.0"
+description = "Rule-based phishing email detection (INF1002)"
+requires-python = ">=3.10"
+[project.scripts]
+phishguard = "phishguard.cli.main:main"
