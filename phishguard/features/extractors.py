@@ -3,7 +3,7 @@
 import re
 
 ## Assuming normalizing is done, body content of email is ready.
-def extract_urls_from_eml(body_content):
+def extract_urls(body_content):
     urls = []   
 
     # This regex is to find URL in body_content
