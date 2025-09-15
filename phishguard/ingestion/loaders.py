@@ -1,6 +1,5 @@
 # A: implement as provided earlier
 
-import email as email_lib
 from email.parser import BytesParser
 from email import policy
 
