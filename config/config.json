@@ -1,1 +1,197 @@
-{ "thresholds": { "safe_max": 2.0, "phishing_min": 2.0 } }
+{
+  "metadata": {
+    "name": "PhishGuard",
+    "version": "1.0.0",
+    "updated_at": "2025-09-14"
+  },
+
+  "thresholds": {
+    "safe_max": 2.0,
+    "phishing_min": 2.0
+  },
+
+  "domain_canonicalization": {
+    "idn_to_ascii": true,
+    "compare_on_registrable_domain": true,
+    "treat_subdomain_as_trusted_when_whitelisted": true,
+    "etld_exceptions": ["co.uk", "com.au", "com.sg", "gov.sg"]
+  },
+
+  "rules": {
+    "whitelist": {
+      "enabled": true,
+      "domains": [
+        "nus.edu.sg",
+        "sit.edu.sg",
+        "microsoft.com",
+        "google.com",
+        "paypal.com",
+        "singpass.gov.sg"
+      ],
+      "include_subdomains": true,
+      "score_delta_on_match": -2.0,
+      "severity": "LOW"
+    },
+
+    "keywords": {
+      "enabled": true,
+      "case_insensitive": true,
+      "max_total": 2.0,
+      "weights": {
+        "urgent": 0.8,
+        "immediately": 0.6,
+        "verify your account": 1.0,
+        "update your password": 0.9,
+        "unusual activity": 0.7,
+        "your account will be closed": 1.2,
+        "payment failed": 0.8,
+        "reset now": 0.8
+      }
+    },
+
+    "reply_to_mismatch": {
+      "enabled": true,
+      "ignore_if_same_registrable_domain": true,
+      "score_delta": 1.5,
+      "severity": "HIGH"
+    },
+
+    "display_name_impersonation": {
+      "enabled": true,
+      "protected_display_names": [
+        "PayPal",
+        "Google",
+        "Microsoft",
+        "Singpass",
+        "IT Support",
+        "HR"
+      ],
+      "score_delta": 1.2,
+      "severity": "MEDIUM"
+    },
+
+    "lookalike_domain": {
+      "enabled": true,
+      "protected_domains": [
+        "paypal.com",
+        "google.com",
+        "microsoft.com",
+        "singpass.gov.sg"
+      ],
+      "max_edit_distance": 1,
+      "score_distance_1": 2.5,
+      "score_distance_2": 3.5,
+      "tld_swap_penalty": 1.0,
+      "homograph_confusables": ["l:I", "rn:m", "0:o", "1:l", "5:s"],
+      "severity_if_distance_1": "HIGH",
+      "severity_if_distance_2": "CRITICAL"
+    },
+
+    "url_redflags": {
+      "enabled": true,
+      "ip_url_penalty": 2.0,
+      "raw_ip_regex": "^(?:\\d{1,3}\\.){3}\\d{1,3}$",
+      "shortener_domains": [
+        "bit.ly",
+        "tinyurl.com",
+        "t.co",
+        "goo.gl",
+        "ow.ly",
+        "is.gd",
+        "buff.ly"
+      ],
+      "shortener_penalty": 1.2,
+      "mismatch_label_href_penalty": 2.0,
+      "suspicious_tlds": [
+        ".zip",
+        ".top",
+        ".xyz",
+        ".ru",
+        ".cn",
+        ".kim",
+        ".rest"
+      ],
+      "suspicious_tld_penalty": 1.0
+    },
+
+    "attachments": {
+      "enabled": true,
+      "risky_extensions": [
+        ".exe",
+        ".js",
+        ".vbs",
+        ".scr",
+        ".bat",
+        ".cmd",
+        ".com",
+        ".pif",
+        ".jar",
+        ".ps1",
+        ".lnk",
+        ".iso",
+        ".img",
+        ".hta",
+        ".html",
+        ".htm",
+        ".docm",
+        ".xlsm",
+        ".pptm"
+      ],
+      "score_per_match": 2.0,
+      "severity": "HIGH",
+      "max_files_scored": 5
+    },
+
+    "auth_results": {
+      "enabled": true,
+      "spf_fail_penalty": 1.0,
+      "dkim_fail_penalty": 1.2,
+      "dmarc_fail_penalty": 1.5,
+      "all_pass_bonus": -0.5,
+      "treat_none_as": "neutral"
+    },
+
+    "html_heuristics": {
+      "enabled": true,
+      "form_tag_penalty": 1.5,
+      "onclick_js_penalty": 1.0,
+      "data_uri_penalty": 1.0,
+      "hidden_text_ratio_threshold": 0.6,
+      "hidden_text_penalty": 1.0
+    },
+
+    "obfuscation": {
+      "enabled": true,
+      "zero_width_chars_penalty": 1.0,
+      "unicode_homoglyph_penalty": 1.2,
+      "char_repeat_threshold": 10,
+      "char_repeat_penalty": 0.8
+    }
+  },
+
+  "logging": {
+    "level": "INFO",
+    "to_file": true,
+    "file_path": "out/phishguard.log",
+    "rotate_max_bytes": 1048576,
+    "rotate_backups": 3
+  },
+
+  "output": {
+    "json_dir": "out/json",
+    "csv_path": "out/results.csv",
+    "timestamped_json": true
+  },
+
+  "cli": {
+    "batch_glob": "*.eml",
+    "fail_fast": false
+  },
+
+  "dataset": {
+    "tags": {
+      "enron": "ham",
+      "spamassassin": "phish"
+    }
+  }
+}

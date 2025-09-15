@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum, auto
 from typing import Dict, List, Optional, Tuple
 
 @dataclass
@@ -16,3 +17,14 @@ class EmailRecord:
     spf_pass: Optional[bool]
     dkim_pass: Optional[bool]
     dmarc_pass: Optional[bool]
+
+class Severity(Enum):
+    LOW = auto(); MEDIUM = auto(); HIGH = auto(); CRITICAL = auto()
+
+@dataclass
+class RuleHit:
+    rule_name: str
+    passed: bool
+    score_delta: float
+    severity: Severity
+    details: Dict[str, str]

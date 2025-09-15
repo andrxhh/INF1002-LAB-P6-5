@@ -1,3 +1,2 @@
-from .email_record import EmailRecord
-from .rule_types import RuleHit, Severity
+from .classes import EmailRecord, RuleHit, Severity
 __all__ = ['EmailRecord','RuleHit','Severity']
