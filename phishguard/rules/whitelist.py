@@ -29,7 +29,3 @@ def check_domain_whitelist(emailaddr):
                 print("Goes into rules-based checks")  # FILLER LINES, need to remove as proj develops
     except:
         return 
-                
-
-def check_known_org_whitelist():
-    pass
