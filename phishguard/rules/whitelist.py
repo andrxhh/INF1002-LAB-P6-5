@@ -2,6 +2,11 @@
 import os
 import re
 
+
+## EXAMPLE USAGE OF FUNCTION
+# emailaddr = "hello@google.com"
+# check_domain_whitelist("hello@google.com") 
+
 def check_domain_whitelist(emailaddr):
 
     # Regex to search the email domain
@@ -25,6 +30,6 @@ def check_domain_whitelist(emailaddr):
     except:
         return 
                 
-## EXAMPLE USAGE OF FUNCTION
-# emailaddr = "hello@google.com"
-# check_domain_whitelist("hello@google.com") 
+
+def check_known_org_whitelist():
+    pass
