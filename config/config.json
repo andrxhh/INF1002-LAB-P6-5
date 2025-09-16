@@ -46,6 +46,17 @@
         "your account will be closed": 1.2,
         "payment failed": 0.8,
         "reset now": 0.8
+      },
+      "count": {
+        "per_phrase_limit": 2,
+        "use_word_boundaries": true
+      },
+      "position": {
+        "subject_boost": 1.5,
+        "intro_chars": 200,
+        "intro_boost": 1.25,
+        "body_boost": 1.0,
+        "allcaps_subject_penalty": 0.2
       }
     },
 
