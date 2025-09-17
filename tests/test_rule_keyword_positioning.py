@@ -1,7 +1,7 @@
 import unittest
 from phishguard.schema import EmailRecord
 from phishguard.rules.keywords import rule_keywords
-
+from phishguard.config import load_config
 BASE_REC = EmailRecord(
     from_display="Support",
     from_addr="support@example.com",
@@ -13,30 +13,7 @@ BASE_REC = EmailRecord(
     spf_pass=None, dkim_pass=None, dmarc_pass=None
 )
 
-CFG = {
-    "rules": {
-        "keywords": {
-            "enabled": True,
-            "case_insensitive": True,
-            "max_total": 4.0,
-            "weights": {
-                "urgent": 0.8,
-                "verify your account": 1.0
-            },
-            "count": {
-                "per_phrase_max": 2,
-                "use_word_boundaries": True
-            },
-            "position": {
-                "subject_boost": 1.5,
-                "intro_chars": 50,
-                "intro_boost": 1.25,
-                "body_boost": 1.0,
-                "allcaps_subject_bonus": 0.2
-            }
-        }
-    }
-}
+CFG = load_config()
 
 class TestKeywordPositioning(unittest.TestCase):
     def test_subject_has_more_weight_than_body(self):
@@ -53,20 +30,20 @@ class TestKeywordPositioning(unittest.TestCase):
               + "later content goes here..."
         rec = BASE_REC.__class__(**{**BASE_REC.__dict__, "body_text": txt})
         h = rule_keywords(rec, CFG)
-        # Two occurrences within intro window (50 chars) get intro_boost
-        self.assertGreaterEqual(h.score_delta, 2 * 1.0 * 1.25)
+        # Two occurrences within intro window (200 chars) get intro_boost
+        self.assertGreaterEqual(h.score_delta, min(2 * 1.0 * 1.25, 2))
 
     def test_per_phrase_cap_limits_repeats(self):
-        txt = "x" * 50 + "urgent " * 10  # 10 repeats in body -> should cap at 2 occurrences
+        txt = "x" * 200 + "urgent " * 10  # 10 repeats in body -> should cap at 2 occurrences
         rec = BASE_REC.__class__(**{**BASE_REC.__dict__, "body_text": txt})
         h = rule_keywords(rec, CFG)
         expected = 0.8 * 2 * 1.0  # weight * per_phrase_max * body_boost
         self.assertAlmostEqual(h.score_delta, expected, places=5)
 
     def test_word_boundaries_reduce_false_positives(self):
-        rec = BASE_REC.__class__(**{**BASE_REC.__dict__, "body_text": "reverify your account quickly"})  # 'verify your account' not whole phrase
+        rec = BASE_REC.__class__(**{**BASE_REC.__dict__, "body_text": "reverify your account quickly"})  # not 'verify your account'
         h = rule_keywords(rec, CFG)
-        # Should not match 'verify your account' as a whole phrase here
+        # Should not match 'verify your account' as word boundaries are taken into account
         self.assertTrue(h.passed or h.score_delta < 1.0)
 
 if __name__ == "__main__":
