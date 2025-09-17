@@ -22,7 +22,8 @@ class TestKeywordPositioning(unittest.TestCase):
         h1 = rule_keywords(rec1, CFG)
         h2 = rule_keywords(rec2, CFG)
         # subject hit includes subject_boost(1.5) + allcaps bonus(0.2)
-        self.assertGreaterEqual(h1.score_delta, 0.8 * 1.5)  # at least subject weight
+        print(h1.details)
+        self.assertGreaterEqual(h1.score_delta, 0.8 * 1.5)  # at least subject weight (>=)
         self.assertGreater(h1.score_delta, h2.score_delta)
 
     def test_intro_boost_applies(self):
