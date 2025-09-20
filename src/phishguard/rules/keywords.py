@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 from typing import Dict, List, Tuple
-from ..schema import EmailRecord, RuleHit, Severity
+from phishguard.schema import EmailRecord, RuleHit, Severity
 
 def _compile_pattern(phrase: str, ci: bool, word_boundaries: bool) -> re.Pattern:
     """

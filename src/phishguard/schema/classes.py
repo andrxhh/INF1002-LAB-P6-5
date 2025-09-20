@@ -24,7 +24,7 @@ class Severity(Enum):
 @dataclass
 class RuleHit:
     rule_name: str
-    passed: bool
-    score_delta: float
-    severity: Severity
-    details: Dict[str, str]
+    passed: bool # True will mean that the rule did not match anything suspicious, False means it did
+    score_delta: float # Score
+    severity: Severity 
+    details: Dict[str, str] #{"string": "string"}
