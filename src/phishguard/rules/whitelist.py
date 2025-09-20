@@ -16,14 +16,15 @@ def check_domain_whitelist(rec: EmailRecord):
     
     total_score = 0.0
     details: List[str] = []
-    domain_whitelist = cfg.get("domains")
-    emailaddr = rec.from_addr or ""
+    domain_whitelist:List[str] = cfg.get("domains")
+    emailaddr:str = rec.from_addr or ""
+    
+    
+    cfg = load_config().get("rules").get("whitelist")
+    if not cfg.get("enabled", True):
+        return RuleHit("whitelist", True, 0.0, Severity.LOW, {"reason": "rule disabled"})
     
     if emailaddr != "":
-        cfg = load_config().get("rules").get("whitelist")
-        if not cfg.get("enabled", True):
-            return RuleHit("whitelist", True, 0.0, Severity.LOW, {"reason": "rule disabled"})
-
         # Regex to search the email domain
         if not cfg.get("include_subdomains", True):
             sender_domain = re.search(r'@(?:[\w-]+\.)?([\w.-]+)', emailaddr).group(1) # regex to INCLUDE subdomain of sender addres 
