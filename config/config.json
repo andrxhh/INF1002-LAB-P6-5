@@ -29,8 +29,7 @@
         "singpass.gov.sg"
       ],
       "include_subdomains": true,
-      "score_delta_on_match": -2.0,
-      "severity": "LOW"
+      "score_delta_on_match": -0.5
     },
 
     "keywords": {
