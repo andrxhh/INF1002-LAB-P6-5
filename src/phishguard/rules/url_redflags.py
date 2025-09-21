@@ -10,14 +10,14 @@ from phishguard.config import load_config
 
 
 ## This function will be used in detect_urlredflags() below:
-def analyze_url_features(url):
+def analyze_url_features(url, cfg):
     """
     This function is use to analyze and identify the features of the URL that is passed into the function as parameter.
     The features include IP addresses, @ symbol, Number of subdomains, Shortened Domain, Suspicious Keyword in URL path, Suspicious TLDs.
     Returns features to detect_urlflags() after analyzing and identifying them.
     """
     
-    cfg : Dict = load_config().get("rules").get("url_redflags")
+    
     
     urlnetloc: str = urlparse(url).netloc
     
@@ -74,7 +74,7 @@ def detect_urlredflags(rec: EmailRecord, config: Dict):
     else:
         for url in url_list:
             
-            features: Dict = analyze_url_features(url) # calls on analyse url function to identify the features of URL
+            features: Dict = analyze_url_features(url, cfg) # calls on analyse url function to identify the features of URL
             
             ip_present: bool = features["has_ip_address"]
             at_present: bool = features["has_at_symbol"]
