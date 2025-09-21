@@ -56,7 +56,7 @@ def detect_urlredflags(rec: EmailRecord, config: Dict):
     Accumulates number of hits for each rule from ALL URLs in the url_lists.
     Results show HOW MANY urls have hits.
     """
-    cfg : Dict = load_config().get("rules").get("url_redflags")
+    cfg = (config or {}).get("rules", {}).get("url_redflags", {})
     total_score = 0.0
     details: List[str] = []
     url_list: List[str] = rec.urls
