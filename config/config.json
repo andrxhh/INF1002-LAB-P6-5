@@ -98,11 +98,20 @@
     },
 
     "url_redflags": {
-      "enabled": false,
+      "enabled": true,
       "ip_url_penalty": 1.5,
       "at_symbol_penalty": 1.5,
       "subdomain_limit_penalty": 2.0,
-      "shortener_penalty": 1.2,
+      "shortener_domains": [
+        "bit.ly",
+        "tinyurl.com",
+        "t.co",
+        "goo.gl",
+        "ow.ly",
+        "is.gd",
+        "buff.ly"
+      ],
+      "shortener_penalty": 1.5,
       "mismatch_label_href_penalty": 2.0,
       "suspicious_tlds": [
         "zip",
@@ -115,6 +124,7 @@
       ],
       "suspicious_tld_penalty": 1.0,
       "suspicious_keyword_path": [
+        "free",
         "login", 
         "verify", 
         "update", 
