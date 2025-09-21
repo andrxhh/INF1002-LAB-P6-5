@@ -7,8 +7,6 @@ from phishguard.schema import EmailRecord, RuleHit, Severity
 from phishguard.config import load_config
 
 
-global cfg
-cfg = load_config().get("rules").get("url_redflags")
 
 
 ## This function will be used in detect_urlredflags() below:
@@ -18,17 +16,25 @@ def analyze_url_features(url):
     The features include IP addresses, @ symbol, Number of subdomains, Shortened Domain, Suspicious Keyword in URL path, Suspicious TLDs.
     Returns features to detect_urlflags() after analyzing and identifying them.
     """
+    
+    cfg : Dict = load_config().get("rules").get("url_redflags")
+    
+    urlnetloc: str = urlparse(url).netloc
+    
     sus_keyword: List[str] = cfg.get("suspicious_keyword_path")
     sus_tlds: List[str] = cfg.get("suspicious_tlds")
-    tld_in_url =  (urlparse(url).netloc.split("."))[-1]
+    shortener_domains: List[str] = cfg.get("shortener_domains")
+    tld_in_url: str =  (urlnetloc.split("."))[-1]
     url_path: str = urlparse(url.lower()).path
-    
+    urlnetloc_split_at: List[str] = re.sub(r"^www\.", "", urlnetloc).split("@") #splits url if there is @
+
+
     # Features contains a dictionary with the key:value pair as shown:
     features = {
-        "has_ip_address": bool(re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", url or "")),
-        "has_at_symbol": "@" in url,
+        "has_ip_address": bool(any(re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", part) for part in urlnetloc.split("@") or "")),
+        "has_at_symbol": "@" in urlnetloc,
         "num_subdomains": len(url.split(".")) - 2 if url else 0,
-        "has_shortened_domain": urlparse(url).netloc.count('.') < 2,  # e.g., bit.ly,
+        "has_shortened_domain":  any(part.lower() in shortener_domains for part in urlnetloc_split_at) ,
         "suspicious_keyword_path": any(
             keyword in url_path for keyword in sus_keyword),
         "suspicious_tlds": any(
@@ -42,14 +48,15 @@ def analyze_url_features(url):
 
 
 ## Detects suspicious URL features
-def detect_urlredflags(rec: EmailRecord):
+def detect_urlredflags(rec: EmailRecord, config: Dict):
     
     """
     Takes list of URL(s) in EmailRecord -> url_lists,  and detects for suspicious features in the URL(s). 
     Differing risk scores for each URL rule relative to impact on suspicions
     Accumulates number of hits for each rule from ALL URLs in the url_lists.
+    Results show HOW MANY urls have hits.
     """
-    
+    cfg : Dict = load_config().get("rules").get("url_redflags")
     total_score = 0.0
     details: List[str] = []
     url_list: List[str] = rec.urls
@@ -62,7 +69,7 @@ def detect_urlredflags(rec: EmailRecord):
     
     
     if not cfg.get("enabled", True) or not url_list:
-        return RuleHit("whitelist", True, 0.0, Severity.LOW, {"reason": "rule disabled"})
+        return RuleHit("url_redflags", True, 0.0, Severity.LOW, {"reason": "rule disabled"})
     
     else:
         for url in url_list:
@@ -110,8 +117,8 @@ def detect_urlredflags(rec: EmailRecord):
         details.append(f"suspicious_keyword: {count_suskeyword}")        
         details.append(f"suspicious_tld: {count_sustlds}")        
         
-        passed = (total_score < 4.0)  
+        passed = (total_score < 2.5)  
         details = {"breakdown": " | ".join(details)} if details else {"hits": "none"}    
-        severity = Severity.LOW if total_score < 4.0 else Severity.MEDIUM
+        severity = Severity.LOW if total_score < 2.5 else Severity.MEDIUM
 
         return RuleHit("url_redflags", passed, total_score, severity, details)
