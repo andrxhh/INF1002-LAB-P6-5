@@ -1,2 +1,2 @@
-from .writers import result_to_json, results_to_csv_rows, write_json_file, write_csv_file, summarize_hits
-__all__ = ['result_to_json','results_to_csv_rows','write_json_file','write_csv_file','summarize_hits']
+from .writers import write_results, write_json, write_csv
+__all__ = ['write_results', 'write_json', 'write_csv']

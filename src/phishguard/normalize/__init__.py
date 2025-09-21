@@ -1,2 +1,2 @@
-from .parse_mime import normalize_headers, decode_addresses, extract_body
-__all__ = ['normalize_headers','decode_addresses','extract_body']
+from .parse_mime import parse_email_to_record
+__all__ = ['parse_email_to_record']

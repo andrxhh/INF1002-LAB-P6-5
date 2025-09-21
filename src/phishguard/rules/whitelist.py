@@ -27,47 +27,29 @@ def check_domain_whitelist(rec: EmailRecord):
 
     
     if emailaddr != "":
-        # # Regex to search the email domain
-        sender_domainonly = re.search(r'@(?:[\w-]+\.)?([\w.-]+)', emailaddr).group(1) # regex to EXCLUDE subdomain of sender addres 
-  
-        if sender_domainonly is not None: # Handles the possibility where regex does not find domains in email
-            # Compares domain in whitelist WITH domain of sender's email address
-            if sender_domainonly in domain_whitelist:
-                if subdomain_enabled:
-                    
-                    sender_withsubdomain = re.search(r'@([\w.-]+)', emailaddr).group(1)
-                    
-                    subdomain_list : List[str] = domain_whitelist.get(sender_domainonly)    
-                    extract_subdomain = sender_withsubdomain.replace("."+sender_domainonly, "")
-                
-                    if extract_subdomain in subdomain_list:
-                        
-                        total_score = total_score + cfg.get("score_delta_on_match")
-                        details.append(f"domain: {sender_withsubdomain}")
-                        
-                else:
-                    total_score = total_score + cfg.get("score_delta_on_match")
-                    details.append(f"domain: {sender_domainonly}")
-                    
-
-
-    passed = (total_score < 0.0)  
-    details = {"match found": " | ".join(details)} if details else {"match found": "none"}    
-    severity = Severity.LOW if total_score < 0.0 else Severity.MEDIUM
-     
-    return RuleHit("whitelist", passed, total_score, severity, details)
-
-
-
-# BASE_REC = EmailRecord(
-#     from_display="Support",
-#     from_addr="support@meds.nus.edu.sg",
-#     reply_to_addr=None,
-#     subject="Hello",
-#     body_text="This is a benign message.",
-#     body_html=None,
-#     urls=[], url_display_pairs=[], attachments=[], headers={},
-#     spf_pass=None, dkim_pass=None, dmarc_pass=None
-# )
-
-# print(check_domain_whitelist(BASE_REC))
+        # Extract domain from email address
+        if "@" in emailaddr:
+            sender_domain = emailaddr.split("@")[1].lower()
+        else:
+            return RuleHit("whitelist", True, 0.0, Severity.LOW, {"reason": "invalid email format"})
+        
+        # Check if domain is in whitelist
+        for whitelisted_domain in domain_whitelist.keys():
+            if subdomain_enabled:
+                # Check if sender domain ends with whitelisted domain
+                if sender_domain == whitelisted_domain or sender_domain.endswith("." + whitelisted_domain):
+                    score_delta = cfg.get("score_delta_on_match", -0.5)
+                    details.append(f"Domain {sender_domain} matches whitelist")
+                    return RuleHit("whitelist", True, score_delta, Severity.LOW, {"matched_domain": whitelisted_domain})
+            else:
+                # Exact domain match only
+                if sender_domain == whitelisted_domain:
+                    score_delta = cfg.get("score_delta_on_match", -0.5)
+                    details.append(f"Domain {sender_domain} matches whitelist")
+                    return RuleHit("whitelist", True, score_delta, Severity.LOW, {"matched_domain": whitelisted_domain})
+        
+        # Domain not in whitelist
+        return RuleHit("whitelist", False, 0.0, Severity.LOW, {"reason": "domain not whitelisted"})
+    
+    # No email address provided
+    return RuleHit("whitelist", True, 0.0, Severity.LOW, {"reason": "no email address"})
