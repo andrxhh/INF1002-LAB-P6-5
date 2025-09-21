@@ -20,15 +20,15 @@
   "rules": {
     "whitelist": {
       "enabled": true,
-      "domains": [
-        "nus.edu.sg",
-        "sit.edu.sg",
-        "microsoft.com",
-        "google.com",
-        "paypal.com",
-        "singpass.gov.sg"
-      ],
-      "include_subdomains": true,
+      "domains": {
+        "nus.edu.sg":["meds"],
+        "sit.edu.sg":[],
+        "microsoft.com":[],
+        "google.com":[],
+        "paypal.com":[],
+        "singpass.gov.sg":[]
+      },
+      "include_subdomains": false,
       "score_delta_on_match": -0.5
     },
 
