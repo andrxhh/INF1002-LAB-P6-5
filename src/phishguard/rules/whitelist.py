@@ -6,14 +6,14 @@ from phishguard.schema import EmailRecord, RuleHit, Severity
 from phishguard.config import load_config
 
 
-def check_domain_whitelist(rec: EmailRecord):
+def check_domain_whitelist(rec: EmailRecord, config: Dict):
     
     """
     Takes the rec.from_addr (sender's email address) and compares it with whitelisted domains in config.json.
     If include_subdomain: true, uses regex that includes subdomain in rec.from_addr for comparison with whitelist.
     Else, uses regex that ignores subdomain.
     """
-    cfg = load_config().get("rules").get("whitelist")
+    cfg = cfg = (config or {}).get("rules", {}).get("whitelist", {})
     
     if not cfg.get("enabled", True):
         return RuleHit("whitelist", True, 0.0, Severity.LOW, {"reason": "rule disabled"})
@@ -32,15 +32,17 @@ def check_domain_whitelist(rec: EmailRecord):
             sender_domain = emailaddr.split("@")[1].lower()
         else:
             return RuleHit("whitelist", True, 0.0, Severity.LOW, {"reason": "invalid email format"})
-        
-        # Check if domain is in whitelist
+
         for whitelisted_domain in domain_whitelist.keys():
             if subdomain_enabled:
                 # Check if sender domain ends with whitelisted domain
-                if sender_domain == whitelisted_domain or sender_domain.endswith("." + whitelisted_domain):
-                    score_delta = cfg.get("score_delta_on_match", -0.5)
-                    details.append(f"Domain {sender_domain} matches whitelist")
-                    return RuleHit("whitelist", True, score_delta, Severity.LOW, {"matched_domain": whitelisted_domain})
+                if re.search(r'@(?:[\w-]+\.)?([\w.-]+)', emailaddr).group(1) == whitelisted_domain:
+                    subdomain = re.search(r'@([\w.-]+)', emailaddr).group(1).replace(re.search(r'@(?:[\w-]+\.)?([\w.-]+)', emailaddr).group(1),"")
+                    subdomain = subdomain[:-1]
+                    if subdomain in domain_whitelist[whitelisted_domain]:
+                        score_delta = cfg.get("score_delta_on_match", -0.5)
+                        details.append(f"Domain {sender_domain} matches whitelist")
+                        return RuleHit("whitelist", True, score_delta, Severity.LOW, {"matched_domain": whitelisted_domain})
             else:
                 # Exact domain match only
                 if sender_domain == whitelisted_domain:
