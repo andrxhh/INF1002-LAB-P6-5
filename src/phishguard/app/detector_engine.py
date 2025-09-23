@@ -1,24 +1,3 @@
-"""
-=============================================================================
-                        PHISHGUARD DETECTOR - BEGINNER FRIENDLY
-=============================================================================
-
-This file contains the PhishingDetector class that does the actual email analysis.
-
-WHAT THIS FILE DOES:
-- Takes email data (sender, subject, body) and analyzes it for phishing threats
-- Uses your friend's email parsing functions to process email files
-- Connects the GUI to the actual phishing detection rules
-- Returns results in a format the GUI can easily display
-
-MAIN COMPONENTS:
-1. PhishingDetector class - The main analysis engine
-2. Email conversion functions - Turn raw emails into structured data
-3. Result formatting functions - Make results GUI-friendly
-
-HOW IT WORKS:
-GUI → Detector → Rules Engine → Results → GUI Display
-"""
 
 # ============================================================================
 #                              IMPORTS
@@ -84,8 +63,6 @@ class PhishingDetector:
         Args:
             config_path: Optional path to config file (uses default if None)
         """
-        print("🔧 Loading phishing detection rules...")
-        
         # STEP 1: Load the configuration (rules, thresholds, etc.)
         self.config = load_config(config_path)  # This loads all the detection rules
         
@@ -103,8 +80,6 @@ class PhishingDetector:
         
         # STEP 4: Try to load additional threat intelligence
         self._load_threat_intelligence()
-        
-        print("🛡️ Phishing detector loaded and ready!")
     
     def _load_threat_intelligence(self):
         """Load threat intelligence data if available"""
@@ -116,7 +91,6 @@ class PhishingDetector:
                 with intel_path.open('r') as f:
                     self.threat_intelligence = json.load(f)
         except Exception as e:
-            print(f"Could not load threat intelligence: {e}")
             self.threat_intelligence = None
     
     # ========================================================================
@@ -130,49 +104,102 @@ class PhishingDetector:
         This is the main function that takes email details and returns
         a security analysis. It's called by the GUI when users click "Analyze Email".
         
-        PROCESS:
-        1. Convert email details into structured format
-        2. Run through all security rules (keywords, URLs, domains, etc.)
-        3. Calculate risk score and classification
-        4. Format results for GUI display
+        PROCESS OVERVIEW:
+        1. Take the raw email data (sender, subject, body)
+        2. Convert it into a structured format our rules can understand
+        3. Run it through all our security checks (keywords, URLs, domains, etc.)
+        4. Calculate a risk score based on what we found
+        5. Decide if it's SAFE, SUSPICIOUS, or PHISHING
+        6. Format the results so the GUI can display them nicely
+        7. Save the results for future reference
+        
+        THINK OF IT LIKE A SECURITY CHECKPOINT:
+        - The email comes in with basic information
+        - We check it against our security rules (like a checklist)
+        - We give it a risk score (like a threat level)
+        - We make a final decision about safety
+        - We tell the user what we found and why
         
         Args:
-            sender: Who sent the email (e.g., "john@example.com")
-            subject: Email subject line (e.g., "Urgent: Account Suspended")
-            body: Full email content (e.g., "Click this link...")
-            
+            sender: The email address that sent this email
+                   Example: "security@paypal.com" or "suspicious@fake-bank.com"
+            subject: The subject line of the email
+                    Example: "Your account has been suspended" or "Urgent action required"
+            body: The main content/text of the email
+                 Example: "Click here to verify your account: http://fake-link.com"
+                 
         Returns:
-            Dictionary with analysis results:
+            A dictionary (like a report card) containing:
             {
-                'classification': 'SAFE' | 'SUSPICIOUS' | 'PHISHING',
-                'final_score': float (risk score),
-                'whitelist': {...},    # Domain trust results
-                'keywords': {...},     # Suspicious keywords found
-                'spoofing': {...},     # Domain spoofing detection
-                'urls': {...}          # URL analysis results
+                'classification': The final verdict - 'SAFE', 'SUSPICIOUS', or 'PHISHING'
+                'final_score': A number showing how risky this email is (higher = more dangerous)
+                'whitelist': Results about whether the sender domain is trusted
+                'keywords': Information about suspicious words found in the email
+                'spoofing': Results about whether the sender might be fake/impersonating someone
+                'urls': Analysis of any links found in the email
             }
         """
-        print(f"🔍 Analyzing email from: {sender}")
         
-        # STEP 1: Convert raw email input into structured format
+        # STEP 1: PREPARE THE EMAIL DATA
+        # ==============================
+        # Take the raw email information and convert it into a structured format
+        # that our security rules can understand and analyze properly
+        print(f"Step 1: Converting email data into analysis format...")
         email_record = self._create_email_record(sender, subject, body)
+        print(f"  ✓ Email record created for analysis")
         
-        # STEP 2: Run the email through all security rules
-        print("🛡️ Running security analysis...")
+        # STEP 2: RUN SECURITY ANALYSIS
+        # =============================
+        # Pass the structured email through all our security rules
+        # This checks for things like:
+        # - Suspicious keywords ("urgent", "verify now", "click here")
+        # - Dangerous URLs (shortened links, suspicious domains)
+        # - Domain spoofing (fake versions of real companies)
+        # - Sender reputation (is this a trusted domain?)
+        print(f"Step 2: Running email through security rules...")
         total_score, rule_hits = evaluate_email(email_record, self.config)
+        print(f"  ✓ Security analysis complete. Risk score: {total_score}")
         
-        # STEP 3: Format results for GUI display
-        print(f"📊 Analysis complete. Risk score: {total_score}")
+        # STEP 3: INTERPRET THE RESULTS
+        # =============================
+        # Take the raw security rule results and format them into
+        # something the GUI can display in a user-friendly way
+        print(f"Step 3: Formatting results for display...")
         results = self._format_results(email_record, total_score, rule_hits)
         
-        # STEP 4: Save results to report manager if available
-        if self.report_manager:
-            try:
-                threat_level = self._convert_classification_to_threat_level(results['classification'])
-                self.report_manager.add_email_report(sender, subject, body, threat_level)
-            except Exception as e:
-                pass  # Continue if storage fails
+        # Determine what the final classification means
+        classification = results['classification']
+        if classification == 'SAFE':
+            print(f"  ✓ VERDICT: Email appears to be legitimate and safe")
+        elif classification == 'SUSPICIOUS':
+            print(f"  ⚠ VERDICT: Email has suspicious characteristics - use caution")
+        else:  # PHISHING
+            print(f"  🚨 VERDICT: Email appears to be a phishing attempt - avoid!")
         
+        # STEP 4: SAVE RESULTS FOR FUTURE REFERENCE
+        # =========================================
+        # If we have a report manager available, save this analysis
+        # so we can track patterns and generate reports later
+        if self.report_manager:
+            print(f"Step 4: Saving analysis results...")
+            try:
+                # Convert our classification to the format the report manager expects
+                threat_level = self._convert_classification_to_threat_level(classification)
+                
+                # Store the email analysis in our database/file system
+                self.report_manager.add_email_report(sender, subject, body, threat_level)
+                print(f"  ✓ Results saved to report manager")
+                
+            except Exception as e:
+                # If saving fails, that's okay - we don't want to break the analysis
+                print(f"  ⚠ Could not save results (continuing anyway): {e}")
+                pass
+        else:
+            print(f"Step 4: No report manager available - skipping save")
+        
+        # STEP 5: RETURN THE FINAL ANALYSIS
+        # =================================
+        print(f"Analysis complete! Returning results to GUI...")
         return results
     
     def _convert_classification_to_threat_level(self, classification: str) -> str:
@@ -218,24 +245,18 @@ class PhishingDetector:
         Returns:
             EmailRecord: Structured email data ready for analysis
         """
-        print("📧 Converting email file using friend's parsing functions...")
-        
         # STEP 1: Extract and clean headers using friend's function
         headers_dict = normalize_header(email_msg)
         subject = headers_dict.get('subject', '')
-        print(f"   ✅ Extracted subject: {subject[:50]}...")
         
         # STEP 2: Extract sender/reply addresses using friend's function
         from_display, from_addr, reply_to_addr = decode_address(email_msg)
-        print(f"   ✅ Extracted sender: {from_addr}")
         
         # STEP 3: Extract email body content using friend's function
         body_text, body_html = extract_body(email_msg)
-        print(f"   ✅ Extracted body: {len(body_text)} characters")
         
         # STEP 4: Find URLs in the email content
         urls_list, url_display_pairs = extract_urls(body_text, body_html)
-        print(f"   ✅ Found {len(urls_list)} URLs")
         
         # STEP 5: Create structured email record for analysis
         return EmailRecord(
@@ -395,7 +416,6 @@ class PhishingDetector:
                     results.append(analysis_result)
                     
                 except Exception as e:
-                    print(f"Error processing email {email_count + 1}: {e}")
                     continue
             
             # Generate summary statistics
@@ -471,5 +491,4 @@ class PhishingDetector:
             return True
             
         except Exception as e:
-            print(f"Error generating report: {e}")
             return False
