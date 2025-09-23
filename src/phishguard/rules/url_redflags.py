@@ -60,6 +60,7 @@ def detect_urlredflags(rec: EmailRecord, config: Dict):
     total_score = 0.0
     details: List[str] = []
     url_list: List[str] = rec.urls
+    url_display_pairs: List[tuple] = rec.url_display_pairs
     count_ip = 0
     count_at = 0
     count_subdomains = 0
@@ -72,53 +73,63 @@ def detect_urlredflags(rec: EmailRecord, config: Dict):
         return RuleHit("url_redflags", True, 0.0, Severity.LOW, {"reason": "rule disabled"})
     
     else:
-        for url in url_list:
-            
-            features: Dict = analyze_url_features(url, cfg) # calls on analyse url function to identify the features of URL
-            
-            ip_present: bool = features["has_ip_address"]
-            at_present: bool = features["has_at_symbol"]
-            num_subdomains: int = features["num_subdomains"]
-            has_shortened_domain: bool = features["has_shortened_domain"]
-            sus_keyword_path: bool = features["suspicious_keyword_path"]
-            suspicious_tlds: bool = features["suspicious_tlds"]
-            
-            # Rules are set below, to determine if URL is suspicious
-            # Rules hit and aggregates the total hits for each URL rule
-            if ip_present:
-                total_score += cfg.get("ip_url_penalty")  # 1.5 score
-                count_ip += 1
-                
-            if at_present:
-                total_score += cfg.get("at_symbol_penalty") # 1.5 score
-                count_at += 1
-                
-            if num_subdomains > 3:
-                total_score += cfg.get("subdomain_limit_penalty") # 2.0 score
-                count_subdomains += num_subdomains
-                
-                
-            if has_shortened_domain:
-                total_score += cfg.get("shortener_penalty") # 1.2 score
-                count_shortdomains += 1
-                
-            if sus_keyword_path:
-                total_score += cfg.get("keyword_penalty") # 1.0 score
-                count_suskeyword += 1
-                
-            if suspicious_tlds:
-                total_score += cfg.get("suspicious_tld_penalty") # 1.0 score
-                count_sustlds += 1
-                
-        details.append(f"ip_in_url: {count_ip}")        
-        details.append(f"at_symbol: {count_at}")        
-        details.append(f"no_of_subdomains: {count_subdomains}")        
-        details.append(f"shortened_domain: {count_shortdomains}")        
-        details.append(f"suspicious_keyword: {count_suskeyword}")        
-        details.append(f"suspicious_tld: {count_sustlds}")        
         
-        passed = (total_score < 2.5)  
-        details = {"breakdown": " | ".join(details)} if details else {"hits": "none"}    
-        severity = Severity.LOW if total_score < 2.5 else Severity.MEDIUM
+        if url_list:
+            for url in url_list:
+                
+                features: Dict = analyze_url_features(url, cfg) # calls on analyse url function to identify the features of URL
+                
+                ip_present: bool = features["has_ip_address"]
+                at_present: bool = features["has_at_symbol"]
+                num_subdomains: int = features["num_subdomains"]
+                has_shortened_domain: bool = features["has_shortened_domain"]
+                sus_keyword_path: bool = features["suspicious_keyword_path"]
+                suspicious_tlds: bool = features["suspicious_tlds"]
+                
+                # Rules are set below, to determine if URL is suspicious
+                # Rules hit and aggregates the total hits for each URL rule
+                if ip_present:
+                    total_score += cfg.get("ip_url_penalty")  # 1.5 score
+                    count_ip += 1
+                    
+                if at_present:
+                    total_score += cfg.get("at_symbol_penalty") # 1.5 score
+                    count_at += 1
+                    
+                if num_subdomains > 3:
+                    total_score += cfg.get("subdomain_limit_penalty") # 2.0 score
+                    count_subdomains += num_subdomains
+                    
+                    
+                if has_shortened_domain:
+                    total_score += cfg.get("shortener_penalty") # 1.2 score
+                    count_shortdomains += 1
+                    
+                if sus_keyword_path:
+                    total_score += cfg.get("keyword_penalty") # 1.0 score
+                    count_suskeyword += 1
+                    
+                if suspicious_tlds:
+                    total_score += cfg.get("suspicious_tld_penalty") # 1.0 score
+                    count_sustlds += 1
+                    
+            details.append(f"ip_in_url: {count_ip}")        
+            details.append(f"at_symbol: {count_at}")        
+            details.append(f"no_of_subdomains: {count_subdomains}")        
+            details.append(f"shortened_domain: {count_shortdomains}")        
+            details.append(f"suspicious_keyword: {count_suskeyword}")        
+            details.append(f"suspicious_tld: {count_sustlds}")        
+            
+            passed = (total_score < 2.5)  
+            details = {"breakdown": " | ".join(details)} if details else {"hits": "none"}    
+            severity = Severity.LOW if total_score < 2.5 else Severity.MEDIUM
 
-        return RuleHit("url_redflags", passed, total_score, severity, details)
+            return RuleHit("url_redflags", passed, total_score, severity, details)
+        
+        else:
+            return RuleHit("url_redflags", True, total_score, Severity.LOW, {"hits": "no urls found"} )
+        
+        if url_display_pairs:
+            pass
+        else:
+            pass

@@ -25,27 +25,41 @@ def check_domain_whitelist(rec: EmailRecord, config: Dict):
     emailaddr:str = rec.from_addr or ""
     subdomain_enabled = cfg.get("include_subdomains")
 
-    
+
     if emailaddr != "":
-        # Extract domain from email address
+        # Extract everything after @ sign in email address
         if "@" in emailaddr:
-            sender_domain = emailaddr.split("@")[1].lower()
+            sender_domain: str = emailaddr.split("@")[1].lower()
         else:
             return RuleHit("whitelist", True, 0.0, Severity.LOW, {"reason": "invalid email format"})
+        
 
         for whitelisted_domain in domain_whitelist.keys():
             if subdomain_enabled:
-                # Check if sender domain ends with whitelisted domain
-                if re.search(r'@(?:[\w-]+\.)?([\w.-]+)', emailaddr).group(1) == whitelisted_domain:
-                    subdomain = re.search(r'@([\w.-]+)', emailaddr).group(1).replace(re.search(r'@(?:[\w-]+\.)?([\w.-]+)', emailaddr).group(1),"")
-                    subdomain = subdomain[:-1]
+                
+                # Handles case where include_subdomain enabled but there is no subdomain in sender's email
+                if sender_domain == whitelisted_domain:
+                    return RuleHit("whitelist", False, 0.0, Severity.LOW, {"reason":"email does not have subdomain" })
+                 
+                # Excludes SUBDOMAIN from email and checks if it is in DOMAIN whitelist first.
+                if re.search(r'@(?:[\w-]+\.)?([\w.-]+)', emailaddr).group(1) == whitelisted_domain: 
+                    
+                    # Extract SUBDOMAIN from the sender's email
+                    subdomain = re.search(r'@([\w.-]+)', emailaddr).group(1).replace(re.search(r'@(?:[\w-]+\.)?([\w.-]+)', emailaddr).group(1),"") # Removes Domain part from sender_domain, which results in ONLY the subdomain
+                    subdomain = subdomain[:-1] 
+                    
+                    # Check if SUBDOMAIN is in the subdomain whitelist belonging to the domain.
                     if subdomain in domain_whitelist[whitelisted_domain]:
                         score_delta = cfg.get("score_delta_on_match", -0.5)
                         details.append(f"Domain {sender_domain} matches whitelist")
-                        return RuleHit("whitelist", True, score_delta, Severity.LOW, {"matched_domain": whitelisted_domain})
+                        return RuleHit("whitelist", True, score_delta, Severity.LOW, {"matched_subdomain_and_domain": sender_domain})
+                    else:
+                        return RuleHit("whitelist", False, 0.0, Severity.LOW, {"reason": "subdomain is not whitelisted"})
+                    
+                     
             else:
-                # Exact domain match only
-                if sender_domain == whitelisted_domain:
+                # Handles case where include_subdomain disabled but there IS subdomain in sender's email
+                if sender_domain == whitelisted_domain or re.search(r'@(?:[\w-]+\.)?([\w.-]+)', emailaddr).group(1) == whitelisted_domain:
                     score_delta = cfg.get("score_delta_on_match", -0.5)
                     details.append(f"Domain {sender_domain} matches whitelist")
                     return RuleHit("whitelist", True, score_delta, Severity.LOW, {"matched_domain": whitelisted_domain})
@@ -54,4 +68,4 @@ def check_domain_whitelist(rec: EmailRecord, config: Dict):
         return RuleHit("whitelist", False, 0.0, Severity.LOW, {"reason": "domain not whitelisted"})
     
     # No email address provided
-    return RuleHit("whitelist", True, 0.0, Severity.LOW, {"reason": "no email address"})
+    return RuleHit("whitelist", False, 0.0, Severity.LOW, {"reason": "no email address"})
