@@ -1,294 +1,225 @@
-#!/usr/bin/env python3
 """
-Email Report CSV Manager
-Creates and manages a CSV file called "emailReport.csv" with email analysis data.
+Email storage and reporting system for PhishGuard
 """
 
-import csv
+import json
 import os
 from datetime import datetime
-from typing import List, Dict, Optional
-import random
+from typing import List, Dict, Any
+
 
 class EmailReportManager:
     """
-    Manages the emailReport.csv file for storing email analysis results.
-    
-    CSV Structure:
-    - fromEmail: Email address of the sender
-    - Subject: Email subject line
-    - Body: Email body content (truncated for readability)
-    - threatLevel: Threat assessment (Low, Medium, High, Critical)
-    - timestamp: When the analysis was performed
+    Simple email report manager that stores analysis results in JSON format.
+    Keeps track of emails with their threat levels for security monitoring.
     """
     
-    def __init__(self, csv_filename: str = "emailReport.csv"):
-        """
-        Initialize the EmailReportManager.
-        
-        Args:
-            csv_filename (str): Name of the CSV file to manage
-        """
-        self.csv_filename = csv_filename
-        self.fieldnames = ['fromEmail', 'Subject', 'Body', 'threatLevel', 'timestamp']
-        
-        # Create CSV file with headers if it doesn't exist
-        self._ensure_csv_exists()
+    def __init__(self, filename: str = "email_analysis_reports.json"):
+        """Initialize the report manager with a storage file"""
+        self.filename = filename
+        self.emails = []
+        self._load_existing_data()
     
-    def _ensure_csv_exists(self):
-        """Create the CSV file with headers if it doesn't exist."""
-        if not os.path.exists(self.csv_filename):
-            with open(self.csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=self.fieldnames)
-                writer.writeheader()
-            print(f"Created new CSV file: {self.csv_filename}")
-    
-    
-    def add_email_record(self, from_email: str, subject: str, body: str, threat_level: str) -> bool:
-        """
-        Add a new email record to the CSV file.
-        
-        Args:
-            from_email (str): Email address of the sender
-            subject (str): Email subject line
-            body (str): Email body content
-            threat_level (str): Threat level (Low, Medium, High, Critical)
-            
-        Returns:
-            bool: True if successful, False otherwise
-        """
+    def _load_existing_data(self):
+        """Load existing email reports from file if it exists"""
         try:
-            # Validate threat level
-            valid_threat_levels = ['Low', 'Medium', 'High', 'Critical']
-            if threat_level not in valid_threat_levels:
-                print(f"Invalid threat level: {threat_level}. Must be one of: {valid_threat_levels}")
-                return False
-            
-            # Truncate body if too long (for CSV readability)
-            truncated_body = body[:200] + "..." if len(body) > 200 else body
-            
-            # Create record
-            record = {
-                'fromEmail': from_email,
+            if os.path.exists(self.filename):
+                with open(self.filename, 'r') as f:
+                    data = json.load(f)
+                    self.emails = data.get('emails', [])
+                print(f"Loaded {len(self.emails)} existing email reports")
+            else:
+                self.emails = []
+        except Exception as e:
+            print(f"Could not load existing data: {e}")
+            self.emails = []
+    
+    def add_email_report(self, sender: str, subject: str, body: str, 
+                        threat_level: str, analysis_details: Dict = None) -> bool:
+        """Add a new email analysis report"""
+        try:
+            email_report = {
+                'fromEmail': sender,
                 'Subject': subject,
-                'Body': truncated_body,
+                'Body': body[:500] + "..." if len(body) > 500 else body,
                 'threatLevel': threat_level,
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                'timestamp': datetime.now().isoformat(),
+                'analysis_details': analysis_details or {}
             }
             
-            # Append to CSV
-            with open(self.csv_filename, 'a', newline='', encoding='utf-8') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=self.fieldnames)
-                writer.writerow(record)
-            
-            print(f"Added email record: {from_email} - {threat_level} threat")
+            self.emails.append(email_report)
+            self._save_to_file()
             return True
-            
         except Exception as e:
-            print(f"Error adding email record: {str(e)}")
+            print(f"Failed to save email report: {e}")
             return False
     
-    def add_multiple_records(self, records: List[Dict[str, str]]) -> int:
-        """
-        Add multiple email records at once.
+    def bulk_add(self, email_list: List[Dict]) -> int:
+        """Add multiple email reports at once"""
+        added_count = 0
+        for email_data in email_list:
+            try:
+                if 'timestamp' not in email_data:
+                    email_data['timestamp'] = datetime.now().isoformat()
+                self.emails.append(email_data)
+                added_count += 1
+            except Exception as e:
+                print(f"Could not add email: {e}")
+                continue
         
-        Args:
-            records (List[Dict]): List of email records to add
-            
-        Returns:
-            int: Number of records successfully added
-        """
-        success_count = 0
-        for record in records:
-            if self.add_email_record(
-                record.get('fromEmail', ''),
-                record.get('Subject', ''),
-                record.get('Body', ''),
-                record.get('threatLevel', 'Low')
-            ):
-                success_count += 1
-        
-        return success_count
+        if added_count > 0:
+            self._save_to_file()
+        return added_count
     
-    def read_all_records(self) -> List[Dict[str, str]]:
-        """
-        Read all records from the CSV file.
-        
-        Returns:
-            List[Dict]: List of all email records
-        """
-        records = []
+    def _save_to_file(self):
+        """Save all email reports to the JSON file"""
         try:
-            with open(self.csv_filename, 'r', newline='', encoding='utf-8') as csvfile:
-                reader = csv.DictReader(csvfile)
-                records = list(reader)
-        except Exception as e:
-            print(f"Error reading CSV file: {str(e)}")
-        
-        return records
-    
-    def get_records_by_threat_level(self, threat_level: str) -> List[Dict[str, str]]:
-        """
-        Get all records with a specific threat level.
-        
-        Args:
-            threat_level (str): Threat level to filter by
+            report_data = {
+                'metadata': {
+                    'created': datetime.now().isoformat(),
+                    'total_emails': len(self.emails),
+                    'format_version': '1.0'
+                },
+                'emails': self.emails
+            }
             
-        Returns:
-            List[Dict]: Filtered records
-        """
-        all_records = self.read_all_records()
-        return [record for record in all_records if record['threatLevel'] == threat_level]
+            with open(self.filename, 'w') as f:
+                json.dump(report_data, f, indent=2)
+        except Exception as e:
+            print(f"Could not save to file: {e}")
     
-    def get_statistics(self) -> Dict[str, int]:
-        """
-        Get statistics about the email records.
-        
-        Returns:
-            Dict[str, int]: Statistics about threat levels
-        """
-        records = self.read_all_records()
-        stats = {'Total': len(records)}
-        
-        threat_levels = ['Low', 'Medium', 'High', 'Critical']
-        for level in threat_levels:
-            stats[level] = len([r for r in records if r['threatLevel'] == level])
-        
+    def filter_by_threat(self, threat_level: str) -> List[Dict]:
+        """Filter emails by threat level"""
+        return [email for email in self.emails 
+                if email.get('threatLevel', '').lower() == threat_level.lower()]
+    
+    def get_threat_statistics(self) -> Dict[str, int]:
+        """Get statistics about threat levels"""
+        stats = {'Low': 0, 'Medium': 0, 'High': 0, 'Critical': 0}
+        for email in self.emails:
+            threat_level = email.get('threatLevel', 'Unknown')
+            if threat_level in stats:
+                stats[threat_level] += 1
         return stats
     
-    def display_records(self, limit: Optional[int] = None):
-        """
-        Display records in a formatted way.
+    def show_stats(self):
+        """Display threat statistics"""
+        stats = self.get_threat_statistics()
+        total = len(self.emails)
         
-        Args:
-            limit (int, optional): Maximum number of records to display
-        """
-        records = self.read_all_records()
+        print(f"\nEmail Threat Statistics")
+        print(f"=====================")
+        print(f"Total Emails: {total}")
+        if total > 0:
+            for level, count in stats.items():
+                percentage = (count / total) * 100
+                print(f"{level}: {count} ({percentage:.1f}%)")
+    
+    def print_emails(self, emails: List[Dict] = None):
+        """Print email reports to console"""
+        if emails is None:
+            emails = self.emails
         
-        if limit:
-            records = records[:limit]
-        
-        if not records:
-            print("No records found in CSV file.")
+        if not emails:
+            print("No emails to display.")
             return
         
-        print(f"\n{'='*80}")
-        print(f"EMAIL REPORT - {len(records)} records")
-        print(f"{'='*80}")
+        print(f"\n--- EMAIL REPORTS ({len(emails)} emails) ---")
         
-        for i, record in enumerate(records, 1):
-            print(f"\nRecord {i}:")
-            print(f"  From: {record['fromEmail']}")
-            print(f"  Subject: {record['Subject']}")
-            print(f"  Body: {record['Body']}")
-            print(f"  Threat Level: {record['threatLevel']}")
-            print(f"  Timestamp: {record['timestamp']}")
-            print("-" * 40)
-    
+        for i, email in enumerate(emails, 1):
+            print(f"\n{i}. From: {email['fromEmail']}")
+            print(f"   Subject: {email['Subject']}")
+            print(f"   Body: {email['Body']}")
+            print(f"   Threat: {email['threatLevel']}")
+            print(f"   Time: {email['timestamp']}")
 
 
-def generate_example_data() -> List[Dict[str, str]]:
-    """
-    Generate example email data for testing.
+def create_sample_data():
+    """Generate some test emails for demo purposes"""
     
-    Returns:
-        List[Dict]: Example email records
-    """
-    example_emails = [
+    # mix of legit and suspicious emails
+    samples = [
         {
-            'fromEmail': 'noreply@paypal.com',
-            'Subject': 'Urgent: Verify Your Account Immediately',
-            'Body': 'Dear Customer, Your PayPal account has been temporarily suspended due to suspicious activity. Please click the link below to verify your account information immediately. Failure to do so will result in permanent account closure.',
+            'fromEmail': 'paypal-noreply@paypal.com',
+            'Subject': 'Please verify your account',
+            'Body': 'Dear valued customer, we noticed some unusual activity on your PayPal account. Please click here to verify your identity within 24 hours or your account will be suspended.',
             'threatLevel': 'High'
         },
         {
-            'fromEmail': 'support@amazon.com',
-            'Subject': 'Your Order #12345 has been shipped',
-            'Body': 'Hello! Your recent order has been shipped and is on its way. You can track your package using the tracking number: 1Z999AA1234567890. Expected delivery: 2-3 business days.',
+            'fromEmail': 'orders@amazon.com', 
+            'Subject': 'Your package has shipped!',
+            'Body': 'Good news! Your order #AMZ-12345 has been shipped via UPS. Track your package with tracking number 1Z999AA1234567890. Estimated delivery: 2-3 business days.',
             'threatLevel': 'Low'
         },
         {
-            'fromEmail': 'security@bankofamerica.com',
-            'Subject': 'IMPORTANT: Unusual Login Activity Detected',
-            'Body': 'We detected unusual login activity on your account from an unrecognized device. If this was not you, please secure your account immediately by clicking here. Your account may be at risk.',
+            'fromEmail': 'security-alert@chase.com',
+            'Subject': 'URGENT - Suspicious login attempt',
+            'Body': 'We detected a login attempt from an unrecognized device in Nigeria. If this was not you, please secure your account immediately by clicking the link below.',
             'threatLevel': 'Critical'
         },
         {
-            'fromEmail': 'newsletter@techcrunch.com',
-            'Subject': 'Weekly Tech News Roundup',
-            'Body': 'This week in tech: Apple announces new iPhone features, Google releases AI updates, and Tesla reports record sales. Read more about these exciting developments in technology.',
+            'fromEmail': 'daily-digest@reddit.com',
+            'Subject': 'Your daily Reddit digest',
+            'Body': 'Here are the top posts from your subscribed communities today. Check out what you missed while you were away!',
             'threatLevel': 'Low'
         },
         {
-            'fromEmail': 'admin@microsoft-security.com',
-            'Subject': 'Your Windows License is Expired',
-            'Body': 'Your Windows license has expired and your computer is at risk. Download the latest security update immediately to protect your system from malware and viruses.',
+            'fromEmail': 'support@microsoft-team.org',  # suspicious domain
+            'Subject': 'Windows Security Update Required',
+            'Body': 'Your Windows license will expire in 3 days. Click here to renew and download the latest security patches to protect against malware.',
             'threatLevel': 'Medium'
         },
         {
-            'fromEmail': 'john.smith@company.com',
-            'Subject': 'Meeting Reminder - Project Review',
-            'Body': 'Hi team, just a reminder about our project review meeting tomorrow at 2 PM in conference room A. Please bring your progress reports and any questions you have.',
+            'fromEmail': 'sarah.johnson@acmecorp.com',
+            'Subject': 'Re: Quarterly budget meeting',
+            'Body': 'Hi everyone, the budget meeting has been moved to Thursday 3pm. Please review the attached documents before the meeting. Thanks!',
             'threatLevel': 'Low'
         },
         {
-            'fromEmail': 'lottery@winning-notification.org',
-            'Subject': 'CONGRATULATIONS! You Won $1,000,000!',
-            'Body': 'Congratulations! You have been selected as the winner of our international lottery. To claim your prize of $1,000,000, please provide your personal information and bank details immediately.',
+            'fromEmail': 'winner-notification@internationallottery.biz',
+            'Subject': 'You have won $500,000 USD!!!',
+            'Body': 'CONGRATULATIONS!!! You have been randomly selected to receive $500,000 from the International Email Lottery. Send us your bank details to claim your prize!',
             'threatLevel': 'Critical'
         },
-        {
-            'fromEmail': 'hr@linkedin.com',
-            'Subject': 'New Job Opportunities for You',
-            'Body': 'Based on your profile, we found 5 new job opportunities that match your skills. Check out these positions and apply today to advance your career.',
-            'threatLevel': 'Low'
-        }
     ]
     
-    return example_emails
+    return samples
 
 
+# Helper function for easy integration
+def create_report_manager(filename: str = "email_analysis_reports.json") -> EmailReportManager:
+    """Create and return an EmailReportManager instance"""
+    return EmailReportManager(filename)
 
-def main():
-    """
-    Main function to demonstrate the EmailReportManager functionality.
-    """
-    print("Email Report CSV Manager - Demo")
-    print("=" * 50)
+
+# Main execution
+if __name__ == "__main__":
+    print("Email Report Manager")
+    print("===================")
     
-    # Create the manager
+    # set up the manager
     manager = EmailReportManager()
     
-    # Generate and add example data
-    print("\n1. Adding example email data...")
-    example_data = generate_example_data()
-    success_count = manager.add_multiple_records(example_data)
-    print(f"Successfully added {success_count} out of {len(example_data)} records")
+    # add some test data
+    print("\nAdding sample email data...")
+    sample_emails = create_sample_data()
+    added = manager.bulk_add(sample_emails)
+    print(f"Added {added} emails")
     
-    # Display statistics
-    print("\n2. Email Report Statistics:")
-    stats = manager.get_statistics()
-    for key, value in stats.items():
-        print(f"  {key}: {value}")
+    # show some stats
+    manager.show_stats()
     
-    # Display all records
-    print("\n3. All Email Records:")
-    manager.display_records()
+    # display the emails
+    print("\nAll emails:")
+    manager.print_emails()
     
-    # Show records by threat level
-    print("\n4. High Threat Emails:")
-    high_threat = manager.get_records_by_threat_level('High')
-    for record in high_threat:
-        print(f"  - {record['fromEmail']}: {record['Subject']}")
+    # show just the dangerous ones
+    print("\n=== HIGH RISK EMAILS ===")
+    dangerous = manager.filter_by_threat('High') + manager.filter_by_threat('Critical')
+    if dangerous:
+        for email in dangerous:
+            print(f"⚠️  {email['fromEmail']}: {email['Subject']}")
+    else:
+        print("No high-risk emails found")
     
-    print("\n5. Critical Threat Emails:")
-    critical_threat = manager.get_records_by_threat_level('Critical')
-    for record in critical_threat:
-        print(f"  - {record['fromEmail']}: {record['Subject']}")
-    
-    print(f"\nDemo completed! Check the '{manager.csv_filename}' file in your current directory.")
-
-
-if __name__ == "__main__":
-    main()
-
+    print(f"\nDone! Check {manager.filename} for the full report.")

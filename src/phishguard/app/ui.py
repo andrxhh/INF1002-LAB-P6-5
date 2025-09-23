@@ -361,6 +361,11 @@ class PhishingDetectorGUI:
                                        command=self.generate_batch_report)
         generate_report_btn.pack(side=tk.LEFT, padx=10)
         
+        # Add button to view stored email reports
+        view_reports_btn = ttk.Button(batch_button_frame, text="View Stored Reports", 
+                                     command=self.view_stored_reports)
+        view_reports_btn.pack(side=tk.LEFT, padx=10)
+        
         clear_batch_btn = ttk.Button(batch_button_frame, text="Clear", 
                                    command=self.clear_batch)
         clear_batch_btn.pack(side=tk.LEFT, padx=10)
@@ -905,6 +910,66 @@ This email was sent to protect your account security."""
         self.batch_results_text.config(state=tk.DISABLED)
         self.current_batch_results = None
         self.status_label.config(text="Batch analysis cleared")
+    
+    def view_stored_reports(self):
+        """View stored email analysis reports"""
+        try:
+            if not hasattr(self.detector, 'report_manager') or not self.detector.report_manager:
+                messagebox.showinfo("Storage Not Available", 
+                                  "Email storage system is not available.")
+                return
+            
+            report_manager = self.detector.report_manager
+            
+            # Clear the batch results area and show stored reports
+            self.batch_results_text.config(state=tk.NORMAL)
+            self.batch_results_text.delete(1.0, tk.END)
+            
+            # Show header
+            self.batch_results_text.insert(tk.END, "STORED EMAIL ANALYSIS REPORTS\n", "header")
+            self.batch_results_text.insert(tk.END, "=" * 50 + "\n\n")
+            
+            # Show threat statistics
+            stats = report_manager.get_threat_statistics()
+            total_emails = len(report_manager.emails)
+            
+            if total_emails == 0:
+                self.batch_results_text.insert(tk.END, "No email reports stored yet.\n\n")
+                self.batch_results_text.insert(tk.END, "Reports will be saved automatically when you analyze emails.\n")
+            else:
+                self.batch_results_text.insert(tk.END, "THREAT STATISTICS\n", "subheader")
+                self.batch_results_text.insert(tk.END, "-" * 20 + "\n")
+                self.batch_results_text.insert(tk.END, f"Total Emails: {total_emails}\n")
+                
+                for level, count in stats.items():
+                    if count > 0:
+                        percentage = (count / total_emails) * 100
+                        color = "safe" if level == "Low" else "suspicious" if level in ["Medium", "High"] else "phishing"
+                        self.batch_results_text.insert(tk.END, f"{level}: {count} ({percentage:.1f}%)\n", color)
+                
+                # Show recent emails by threat level
+                high_priority = report_manager.filter_by_threat('Critical') + report_manager.filter_by_threat('High')
+                
+                if high_priority:
+                    self.batch_results_text.insert(tk.END, f"\nHIGH PRIORITY EMAILS\n", "subheader")
+                    self.batch_results_text.insert(tk.END, "-" * 20 + "\n")
+                    
+                    for email in high_priority[-5:]:  # Last 5
+                        threat = email.get('threatLevel', 'Unknown')
+                        color = "phishing" if threat == 'Critical' else "suspicious"
+                        
+                        self.batch_results_text.insert(tk.END, f"\n• {threat}: ", color)
+                        self.batch_results_text.insert(tk.END, f"{email.get('fromEmail', 'Unknown')}\n")
+                        self.batch_results_text.insert(tk.END, f"  Subject: {email.get('Subject', 'No subject')[:50]}...\n")
+                
+                self.batch_results_text.insert(tk.END, f"\nFile: {report_manager.filename}\n")
+            
+            self.batch_results_text.config(state=tk.DISABLED)
+            self.status_label.config(text=f"Showing {total_emails} stored reports")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load reports: {str(e)}")
+            self.status_label.config(text="Error loading reports")
     
 
 

@@ -39,6 +39,13 @@ from phishguard.features.extractors import extract_urls     # URL extractor
 # Your friend's email parsing functions (clean and simple!)
 from phishguard.normalize.parse_mime import normalize_header, decode_address, extract_body
 
+# Storage system for saving analysis results
+try:
+    from phishguard.storage.storage import create_report_manager
+    STORAGE_AVAILABLE = True
+except ImportError:
+    STORAGE_AVAILABLE = False
+
 
 # ============================================================================
 #                           MAIN DETECTOR CLASS
@@ -85,7 +92,16 @@ class PhishingDetector:
         # STEP 2: Initialize threat intelligence storage
         self.threat_intelligence = None  # Advanced threat data (optional)
         
-        # STEP 3: Try to load additional threat intelligence
+        # STEP 3: Initialize email report manager for saving analysis results
+        if STORAGE_AVAILABLE:
+            try:
+                self.report_manager = create_report_manager()
+            except Exception as e:
+                self.report_manager = None
+        else:
+            self.report_manager = None
+        
+        # STEP 4: Try to load additional threat intelligence
         self._load_threat_intelligence()
         
         print("🛡️ Phishing detector loaded and ready!")
@@ -147,7 +163,38 @@ class PhishingDetector:
         
         # STEP 3: Format results for GUI display
         print(f"📊 Analysis complete. Risk score: {total_score}")
-        return self._format_results(email_record, total_score, rule_hits)
+        results = self._format_results(email_record, total_score, rule_hits)
+        
+        # STEP 4: Save results to report manager if available
+        if self.report_manager:
+            try:
+                threat_level = self._convert_classification_to_threat_level(results['classification'])
+                self.report_manager.add_email_report(sender, subject, body, threat_level)
+            except Exception as e:
+                pass  # Continue if storage fails
+        
+        return results
+    
+    def _convert_classification_to_threat_level(self, classification: str) -> str:
+        """
+        CONVERT PHISHGUARD CLASSIFICATION TO THREAT LEVEL
+        
+        This converts our internal classification (SAFE, SUSPICIOUS, PHISHING)
+        to the threat level format used by the report manager.
+        
+        Args:
+            classification: PhishGuard classification (SAFE, SUSPICIOUS, PHISHING)
+            
+        Returns:
+            Threat level string (Low, Medium, High, Critical)
+        """
+        classification_mapping = {
+            'SAFE': 'Low',
+            'SUSPICIOUS': 'Medium', 
+            'PHISHING': 'Critical'
+        }
+        
+        return classification_mapping.get(classification, 'Medium')
     
     # ========================================================================
     #                        EMAIL CONVERSION FUNCTIONS
@@ -334,6 +381,16 @@ class PhishingDetector:
                         'subject': email_record.subject,
                         'body_length': len(email_record.body_text or '')
                     }
+                    
+                    # Save individual email analysis to report manager
+                    if self.report_manager:
+                        try:
+                            threat_level = self._convert_classification_to_threat_level(analysis_result['classification'])
+                            self.report_manager.add_email_report(
+                                email_record.from_addr, email_record.subject, 
+                                email_record.body_text or '', threat_level)
+                        except Exception as e:
+                            pass  # Continue if storage fails
                     
                     results.append(analysis_result)
                     
