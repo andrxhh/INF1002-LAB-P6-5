@@ -1,93 +1,125 @@
-# Tkinter UI
 #!/usr/bin/env python3
 """
-Phishing Email Detection GUI Application
+=============================================================================
+                     PHISHGUARD GUI - BEGINNER FRIENDLY VERSION
+=============================================================================
 
-This module provides a user-friendly graphical interface for the phishing email detector.
-It's designed to be intuitive for both technical and non-technical team members.
+This is the main user interface for the PhishGuard email security system.
 
-Key Features:
-- Individual email analysis with detailed results
-- Batch email processing from files
-- Visual risk scoring and color-coded results
-- Detailed reports with recommendations
-- Export capabilities for sharing results
-- Easy-to-understand explanations for non-technical users
+WHAT THIS FILE DOES:
+- Creates a simple window where users can analyze emails for phishing threats
+- Has two main tabs: Individual Analysis and Batch Analysis  
+- Shows results in easy-to-understand, color-coded format
 
-Author: Group Project Team
-Purpose: User-friendly interface for phishing email detection system
-Dependencies: tkinter (built into Python), PhishingDetector class
+MAIN COMPONENTS:
+1. PhishingDetectorGUI class - The main window and interface
+2. Individual Analysis tab - Analyze one email at a time
+3. Batch Analysis tab - Process multiple emails from files
+4. Helper functions - Load files, display results, etc.
+
+HOW TO USE:
+- Run this file to open the GUI
+- Paste email content or load from files
+- Click "Analyze Email" to check for phishing threats
+- Read the color-coded results and recommendations
 """
 
-import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox, filedialog
-import os
-import sys
+# ============================================================================
+#                              IMPORTS
+# ============================================================================
+import tkinter as tk                    # For creating the GUI window
+from tkinter import ttk                 # For modern GUI widgets
+from tkinter import scrolledtext        # For text areas with scrollbars
+from tkinter import messagebox          # For popup error/info messages
+from tkinter import filedialog          # For file open/save dialogs
+import os                              # For file operations
+import sys                             # For system operations
+from pathlib import Path               # For handling file paths
 
+# ============================================================================
+#                           PYTHON PATH SETUP
+# ============================================================================
+# Add the src directory to Python path so we can import phishguard modules
+# This is needed when running the GUI directly
+project_root = Path(__file__).parent.parent.parent.parent  # Go up to project root
+src_path = project_root / "src"
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
+
+# ============================================================================
+#                        IMPORT PHISHGUARD COMPONENTS
+# ============================================================================
 # Import our phishing detection components
 try:
     from phishguard.app.detector import PhishingDetector
     from phishguard.schema import EmailRecord
-    # TODO: Implement EmailDatasetAnalyzer if needed for threat intelligence
-    # from phishguard.analysis.data_analyzer import EmailDatasetAnalyzer
-    EmailDatasetAnalyzer = None  # Placeholder for now
+    print("✅ Successfully imported PhishGuard components")
 except ImportError as e:
     messagebox.showerror("Import Error", f"Could not import required modules: {e}")
     sys.exit(1)
 
 
+# ============================================================================
+#                           MAIN GUI CLASS
+# ============================================================================
+
 class PhishingDetectorGUI:
     """
-    Graphical User Interface for Phishing Email Detection
+    ==========================================================================
+                            MAIN GUI APPLICATION CLASS
+    ==========================================================================
     
-    This class creates a professional, easy-to-use interface that allows team members
-    to analyze emails for phishing attempts without needing to write code.
+    This is the main class that creates and manages the PhishGuard GUI window.
     
-    The interface is organized into tabs:
-    1. 📧 Individual Analysis: Analyze single emails with detailed breakdown
-    2. 📁 Batch Analysis: Process multiple emails from files
-    3. 📊 System Status: View threat intelligence and system information
+    WHAT IT DOES:
+    - Creates a window with tabs for different functions
+    - Handles user input (email text, file uploads)
+    - Calls the phishing detector to analyze emails
+    - Shows results in a user-friendly format
     
-    Think of this as the "control panel" for our phishing detection system.
+    THE TWO MAIN TABS:
+    1. 📧 Individual Analysis - Check one email at a time
+    2. 📁 Batch Analysis - Check multiple emails from files
+    
+    BEGINNER TIP: 
+    Think of this like the "control panel" for our email security system!
     """
     
     def __init__(self, root):
         """
-        Initialize the GUI Application
+        INITIALIZE THE GUI APPLICATION
         
-        Sets up the user interface and initializes the phishing detector.
+        This sets up everything needed for the GUI to work:
+        1. Save the main window reference
+        2. Initialize the phishing detection engine
+        3. Create the user interface
         
         Args:
-            root: Tkinter root window
+            root: The main tkinter window (passed from main() function)
         """
+        print("🚀 Setting up PhishGuard GUI...")
+        
+        # STEP 1: Save reference to the main window
         self.root = root
         
-        # Initialize the phishing detector (this may take a moment to load threat intelligence)
-        print("🔄 Initializing phishing detection system...")
+        # STEP 2: Initialize the phishing detection engine
+        print("🔄 Starting phishing detection system...")
         try:
-            self.detector = PhishingDetector()
-            print("✅ Phishing detector initialized successfully")
+            self.detector = PhishingDetector()  # This does the actual email analysis
+            print("✅ Phishing detector ready!")
         except Exception as e:
-            messagebox.showerror("Initialization Error", 
-                               f"Failed to initialize phishing detector: {e}")
+            # If detector fails to load, show error and exit
+            messagebox.showerror("Startup Error", 
+                               f"Failed to start phishing detector: {e}")
             sys.exit(1)
         
-        # Initialize data analyzer for system information
-        if EmailDatasetAnalyzer:
-            try:
-                self.data_analyzer = EmailDatasetAnalyzer()
-            except Exception as e:
-                print(f"⚠️  Data analyzer initialization warning: {e}")
-                self.data_analyzer = None
-        else:
-            print("📊 Data analyzer not implemented yet")
-            self.data_analyzer = None
+        # STEP 3: Storage for batch analysis results
+        self.current_batch_results = None  # Stores results when analyzing multiple emails
         
-        # Storage for batch results (for report generation)
-        self.current_batch_results = None
-        
-        # Setup the user interface
+        # STEP 4: Build the user interface
+        print("🎨 Creating user interface...")
         self.setup_ui()
+        print("✅ GUI ready for use!")
     
     def setup_ui(self):
         """
@@ -174,16 +206,13 @@ class PhishingDetectorGUI:
         # Create tabs
         self.individual_frame = ttk.Frame(notebook, padding="15")
         self.batch_frame = ttk.Frame(notebook, padding="15")
-        self.system_frame = ttk.Frame(notebook, padding="15")
         
         notebook.add(self.individual_frame, text="Individual Analysis")
         notebook.add(self.batch_frame, text="Batch Analysis")
-        notebook.add(self.system_frame, text="System Status")
         
         # Setup each tab
         self.setup_individual_tab()
         self.setup_batch_tab()
-        self.setup_system_tab()
         
         # ================================
         # STATUS BAR
@@ -230,7 +259,7 @@ class PhishingDetectorGUI:
         
         # Help text
         help_text = ttk.Label(input_frame, 
-                             text="Tip: Copy and paste the complete email content above for analysis",
+                             text="Tip: Copy and paste email content above, or use 'Load from File' for .eml, .mbox, .txt files",
                              font=('Arial', 9), foreground='gray')
         help_text.grid(row=3, column=0, columnspan=2, sticky=tk.W, pady=(10, 0))
         
@@ -254,6 +283,11 @@ class PhishingDetectorGUI:
         sample_btn = ttk.Button(button_frame, text="Load Sample", 
                               command=self.load_sample_email)
         sample_btn.pack(side=tk.LEFT, padx=10)
+        
+        # Load from file button
+        load_file_btn = ttk.Button(button_frame, text="Load from File", 
+                                 command=self.load_email_from_file)
+        load_file_btn.pack(side=tk.LEFT, padx=10)
         
         # ================================
         # RESULTS SECTION
@@ -305,8 +339,11 @@ class PhishingDetectorGUI:
         
         # Instructions
         instructions = ttk.Label(file_frame, 
-                                text="File Format: Each email should have 'From:', 'Subject:', and 'Body:' sections.\n"
-                                     "   Separate multiple emails with '---' or 'EMAIL:' dividers.",
+                                text="Supported Formats:\n"
+                                     "• Text files (.txt) - Multiple emails separated by '---' or 'EMAIL:' dividers\n"
+                                     "• Unix Mailbox (.mbox) - Standard Unix mbox format with multiple emails\n"
+                                     "• Email Message (.eml) - Individual RFC822 email message files\n"
+                                     "• Outlook Message (.msg) - Microsoft Outlook message files",
                                 font=('Arial', 9), foreground='gray')
         instructions.grid(row=1, column=0, columnspan=3, sticky=tk.W, pady=(10, 0))
         
@@ -349,62 +386,6 @@ class PhishingDetectorGUI:
         
         # Configure batch frame weights
         self.batch_frame.rowconfigure(2, weight=1)
-    
-    def setup_system_tab(self):
-        """
-        SYSTEM STATUS TAB
-        
-        This tab shows information about the detection system, threat intelligence,
-        and provides system management functions.
-        """
-        self.system_frame.columnconfigure(0, weight=1)
-        
-        # ================================
-        # SYSTEM INFORMATION
-        # ================================
-        sys_info_frame = ttk.LabelFrame(self.system_frame, text="System Information", padding="15")
-        sys_info_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
-        sys_info_frame.columnconfigure(0, weight=1)
-        
-        self.system_info_text = scrolledtext.ScrolledText(sys_info_frame, width=90, height=12, 
-                                                         wrap=tk.WORD, state=tk.DISABLED, font=('Arial', 10))
-        self.system_info_text.grid(row=0, column=0, sticky=(tk.W, tk.E))
-        
-        # ================================
-        # SYSTEM CONTROLS
-        # ================================
-        controls_frame = ttk.LabelFrame(self.system_frame, text="System Controls", padding="15")
-        controls_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(15, 15))
-        
-        refresh_btn = ttk.Button(controls_frame, text="Refresh System Info", 
-                               command=self.refresh_system_info)
-        refresh_btn.pack(side=tk.LEFT, padx=10)
-        
-        update_intel_btn = ttk.Button(controls_frame, text="Update Threat Intelligence", 
-                                    command=self.update_threat_intelligence)
-        update_intel_btn.pack(side=tk.LEFT, padx=10)
-        
-        test_datasets_btn = ttk.Button(controls_frame, text="Test Email Datasets", 
-                                     command=self.test_email_datasets)
-        test_datasets_btn.pack(side=tk.LEFT, padx=10)
-        
-        # ================================
-        # THREAT INTELLIGENCE PREVIEW
-        # ================================
-        threat_frame = ttk.LabelFrame(self.system_frame, text="Threat Intelligence Preview", padding="15")
-        threat_frame.grid(row=2, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(15, 0))
-        threat_frame.columnconfigure(0, weight=1)
-        threat_frame.rowconfigure(0, weight=1)
-        
-        self.threat_intel_text = scrolledtext.ScrolledText(threat_frame, width=90, height=15, 
-                                                          wrap=tk.WORD, state=tk.DISABLED, font=('Arial', 10))
-        self.threat_intel_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        
-        # Configure system frame weights
-        self.system_frame.rowconfigure(2, weight=1)
-        
-        # Load initial system information
-        self.refresh_system_info()
     
     def analyze_email(self):
         """
@@ -495,7 +476,7 @@ class PhishingDetectorGUI:
         self.results_text.insert(tk.END, f"   Assessment: {verdict_explanation}\n\n")
         
         # ================================
-        # DETAILED TECHNICAL ANALYSIS
+        # DETAILED ANALYSIS
         # ================================
         self.results_text.insert(tk.END, "DETAILED SECURITY ANALYSIS:\n", "subheader")
         self.results_text.insert(tk.END, "-" * 50 + "\n\n")
@@ -583,16 +564,7 @@ class PhishingDetectorGUI:
         # TECHNICAL NOTES
         # ================================
         self.results_text.insert(tk.END, f"\nTechnical Details:\n")
-        self.results_text.insert(tk.END, f"   Analysis Engine: Advanced Rule-Based Detection\n")
-        self.results_text.insert(tk.END, f"   Threat Intelligence: {'Enabled' if self.detector.threat_intelligence else 'Static patterns only'}\n")
-        # Check if Levenshtein is available
-        try:
-            import Levenshtein
-            levenshtein_available = True
-        except ImportError:
-            levenshtein_available = False
-        
-        self.results_text.insert(tk.END, f"   URL Analysis: {'Enhanced (Levenshtein)' if levenshtein_available else 'Basic pattern matching'}\n")
+        self.results_text.insert(tk.END, f"   Analysis Engine: PhishGuard Rule-Based Detection\n")
         self.results_text.insert(tk.END, f"   Analysis Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         
         self.results_text.config(state=tk.DISABLED)
@@ -639,18 +611,110 @@ This email was sent to protect your account security."""
         
         self.status_label.config(text="Sample phishing email loaded - click 'Analyze Email' to see detection in action")
     
+    def load_email_from_file(self):
+        """LOAD EMAIL FROM FILE: Load individual email from various file formats"""
+        file_path = filedialog.askopenfilename(
+            title="Load Email from File",
+            filetypes=[
+                ("Email files", "*.txt;*.mbox;*.eml;*.msg"),
+                ("Text files", "*.txt"),
+                ("Unix Mailbox", "*.mbox"),  
+                ("Email Message", "*.eml"),
+                ("Outlook Message", "*.msg"),
+                ("All files", "*.*")
+            ]
+        )
+        
+        if not file_path:
+            return
+            
+        try:
+            # Use the ingestion system to parse the email
+            from phishguard.ingestion.loaders import iterate_emails
+            from phishguard.normalize.parse_mime import normalize_header, decode_address, extract_body
+            
+            # Get the first email from the file
+            email_loaded = False
+            for path, email_msg in iterate_emails(file_path):
+                try:
+                    # Use your friend's functions directly to extract email data
+                    
+                    # Extract headers using your friend's function
+                    headers_dict = normalize_header(email_msg)
+                    subject = headers_dict.get('subject', '')
+                    
+                    # Extract addresses using your friend's function
+                    from_display, from_addr, reply_to_addr = decode_address(email_msg)
+                    
+                    # Extract body content using your friend's function
+                    body_text, body_html = extract_body(email_msg)
+                    
+                    # Clear existing content
+                    self.clear_fields()
+                    
+                    # Load email data into the form
+                    self.sender_entry.insert(0, from_addr or '')
+                    self.subject_entry.insert(0, subject or '')
+                    
+                    # Use body_text, or extract from body_html if no text version
+                    body_content = body_text or ''
+                    if not body_content and body_html:
+                        # Simple HTML to text conversion for display
+                        import re
+                        body_content = re.sub(r'<[^>]+>', '', body_html)
+                        body_content = body_content.replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&')
+                    
+                    self.body_text.insert(1.0, body_content)
+                    
+                    # Update status
+                    filename = os.path.basename(file_path)
+                    self.status_label.config(text=f"Email loaded from {filename} - ready for analysis")
+                    email_loaded = True
+                    break  # Only load the first email for individual analysis
+                    
+                except Exception as e:
+                    print(f"Error parsing email: {e}")
+                    continue
+            
+            if not email_loaded:
+                messagebox.showerror("Load Error", 
+                                   f"Could not load email from file: {os.path.basename(file_path)}\n\n"
+                                   f"Please ensure the file contains a valid email message.")
+                self.status_label.config(text="Failed to load email from file")
+        
+        except Exception as e:
+            messagebox.showerror("Load Error", f"Error loading email file: {str(e)}")
+            self.status_label.config(text="Error loading email file")
+    
     def browse_file(self):
         """BROWSE FOR BATCH FILE: Open file dialog to select email file"""
         file_path = filedialog.askopenfilename(
             title="Select Email File for Batch Analysis",
             filetypes=[
+                ("Email files", "*.txt;*.mbox;*.eml;*.msg"),
                 ("Text files", "*.txt"),
+                ("Unix Mailbox", "*.mbox"),
+                ("Email Message", "*.eml"),
+                ("Outlook Message", "*.msg"),
                 ("All files", "*.*")
             ]
         )
         if file_path:
             self.file_path_var.set(file_path)
-            self.status_label.config(text=f"Selected file: {os.path.basename(file_path)}")
+            # Determine file type for better user feedback
+            file_ext = os.path.splitext(file_path)[1].lower()
+            if file_ext == '.mbox':
+                file_type = "Unix mailbox file"
+            elif file_ext == '.eml':
+                file_type = "Email message file"
+            elif file_ext == '.msg':
+                file_type = "Outlook message file"
+            elif file_ext == '.txt':
+                file_type = "Text file"
+            else:
+                file_type = "Email file"
+            
+            self.status_label.config(text=f"Selected {file_type}: {os.path.basename(file_path)}")
     
     def analyze_batch(self):
         """BATCH EMAIL ANALYSIS: Process multiple emails from file"""
@@ -842,256 +906,64 @@ This email was sent to protect your account security."""
         self.current_batch_results = None
         self.status_label.config(text="Batch analysis cleared")
     
-    def refresh_system_info(self):
-        """REFRESH SYSTEM INFO: Update system status information"""
-        self.system_info_text.config(state=tk.NORMAL)
-        self.system_info_text.delete(1.0, tk.END)
-        
-        self.system_info_text.insert(tk.END, "PHISHING DETECTION SYSTEM STATUS\n", "header")
-        self.system_info_text.insert(tk.END, "=" * 50 + "\n\n")
-        
-        # System Information
-        self.system_info_text.insert(tk.END, "System Information:\n", "subheader")
-        self.system_info_text.insert(tk.END, f"   Version: Advanced Rule-Based Detection Engine v1.0\n")
-        self.system_info_text.insert(tk.END, f"   Status: Operational\n")
-        self.system_info_text.insert(tk.END, f"   Detection Methods: Keyword Analysis, Domain Spoofing, URL Analysis, Auth Verification\n")
-        
-        # Dependencies
-        self.system_info_text.insert(tk.END, f"\nDependencies:\n", "subheader")
-        self.system_info_text.insert(tk.END, f"   Python Email Library: Available\n")
-        # Check Levenshtein availability
-        try:
-            import Levenshtein
-            levenshtein_status = "Available (Enhanced URL Analysis)"
-        except ImportError:
-            levenshtein_status = "Not Available (Basic Analysis Only)"
-        self.system_info_text.insert(tk.END, f"   Levenshtein Distance: {levenshtein_status}\n")
-        self.system_info_text.insert(tk.END, f"   Tkinter GUI: Available\n")
-        
-        # Threat Intelligence Status
-        self.system_info_text.insert(tk.END, f"\nThreat Intelligence:\n", "subheader")
-        if self.detector.threat_intelligence:
-            keywords = len(self.detector.threat_intelligence.get('suspicious_keywords', {}))
-            domains = len(self.detector.threat_intelligence.get('suspicious_domains', {}))
-            self.system_info_text.insert(tk.END, f"   Status: Active\n")
-            self.system_info_text.insert(tk.END, f"   Suspicious Keywords: {keywords}\n")
-            self.system_info_text.insert(tk.END, f"   Suspicious Domains: {domains}\n")
-            
-            if 'generated_at' in self.detector.threat_intelligence:
-                self.system_info_text.insert(tk.END, f"   Last Updated: {self.detector.threat_intelligence['generated_at']}\n")
-        else:
-            self.system_info_text.insert(tk.END, f"   Status: Using Static Patterns Only\n")
-            self.system_info_text.insert(tk.END, f"   Recommendation: Update threat intelligence from email datasets\n")
-        
-        # Dataset Information
-        self.system_info_text.insert(tk.END, f"\nEmail Datasets:\n", "subheader")
-        if self.data_analyzer:
-            if self.data_analyzer.ham_dir and os.path.exists(self.data_analyzer.ham_dir):
-                ham_count = len([f for f in os.listdir(self.data_analyzer.ham_dir) if os.path.isfile(os.path.join(self.data_analyzer.ham_dir, f))])
-                self.system_info_text.insert(tk.END, f"   Legitimate Emails: {ham_count} files in {self.data_analyzer.ham_dir}\n")
-            else:
-                self.system_info_text.insert(tk.END, f"   Legitimate Emails: No ham dataset found\n")
-            
-            if self.data_analyzer.spam_dir and os.path.exists(self.data_analyzer.spam_dir):
-                spam_count = len([f for f in os.listdir(self.data_analyzer.spam_dir) if os.path.isfile(os.path.join(self.data_analyzer.spam_dir, f))])
-                self.system_info_text.insert(tk.END, f"   Malicious Emails: {spam_count} files in {self.data_analyzer.spam_dir}\n")
-            else:
-                self.system_info_text.insert(tk.END, f"   Malicious Emails: No spam dataset found\n")
-        else:
-            self.system_info_text.insert(tk.END, f"   Status: Dataset analyzer not available\n")
-        
-        # Performance Information
-        self.system_info_text.insert(tk.END, f"\nPerformance Characteristics:\n", "subheader")
-        self.system_info_text.insert(tk.END, f"   Analysis Speed: ~1-2 seconds per email\n")
-        self.system_info_text.insert(tk.END, f"   Memory Usage: Low (rule-based, no ML models)\n")
-        self.system_info_text.insert(tk.END, f"   Scalability: Suitable for individual and batch analysis\n")
-        self.system_info_text.insert(tk.END, f"   Accuracy: High precision with low false positives\n")
-        
-        self.system_info_text.config(state=tk.DISABLED)
-        
-        # Also refresh threat intelligence preview
-        self.refresh_threat_intelligence_preview()
-    
-    def refresh_threat_intelligence_preview(self):
-        """REFRESH THREAT INTEL: Update threat intelligence preview"""
-        self.threat_intel_text.config(state=tk.NORMAL)
-        self.threat_intel_text.delete(1.0, tk.END)
-        
-        if self.detector.threat_intelligence:
-            threat_intel = self.detector.threat_intelligence
-            
-            self.threat_intel_text.insert(tk.END, "🕵️ ACTIVE THREAT INTELLIGENCE\n", "header")
-            self.threat_intel_text.insert(tk.END, "=" * 40 + "\n\n")
-            
-            # Top suspicious keywords
-            self.threat_intel_text.insert(tk.END, "Top Suspicious Keywords:\n", "subheader")
-            keywords = list(threat_intel.get('suspicious_keywords', {}).items())[:15]
-            for keyword, score in keywords:
-                self.threat_intel_text.insert(tk.END, f"   '{keyword}' (risk: {score})\n")
-            
-            self.threat_intel_text.insert(tk.END, f"\nTop Suspicious Domains:\n", "subheader")
-            domains = list(threat_intel.get('suspicious_domains', {}).items())[:10]
-            for domain, score in domains:
-                self.threat_intel_text.insert(tk.END, f"   '{domain}' (risk: {score})\n")
-            
-            self.threat_intel_text.insert(tk.END, f"\nSuspicious URL Patterns:\n", "subheader")
-            url_patterns = list(threat_intel.get('suspicious_url_patterns', {}).items())[:8]
-            for pattern, score in url_patterns:
-                self.threat_intel_text.insert(tk.END, f"   '{pattern}' (risk: {score})\n")
-            
-            # Statistics
-            if 'analysis_stats' in threat_intel:
-                stats = threat_intel['analysis_stats']
-                self.threat_intel_text.insert(tk.END, f"\nIntelligence Statistics:\n", "subheader")
-                self.threat_intel_text.insert(tk.END, f"   Generated from: {stats.get('total_phishing_emails_analyzed', 'Unknown')} malicious + {stats.get('total_legitimate_emails_analyzed', 'Unknown')} legitimate emails\n")
-                self.threat_intel_text.insert(tk.END, f"   Last updated: {threat_intel.get('generated_at', 'Unknown')}\n")
-        else:
-            self.threat_intel_text.insert(tk.END, "NO ACTIVE THREAT INTELLIGENCE\n", "header")
-            self.threat_intel_text.insert(tk.END, "=" * 40 + "\n\n")
-            self.threat_intel_text.insert(tk.END, "The system is currently using static detection patterns only.\n")
-            self.threat_intel_text.insert(tk.END, "To enable dynamic threat intelligence:\n\n")
-            self.threat_intel_text.insert(tk.END, "1. Ensure email datasets are available in the data/ directory\n")
-            self.threat_intel_text.insert(tk.END, "2. Click 'Update Threat Intelligence' to generate patterns\n")
-            self.threat_intel_text.insert(tk.END, "3. Dynamic patterns will enhance detection accuracy\n")
-        
-        self.threat_intel_text.config(state=tk.DISABLED)
-    
-    def update_threat_intelligence(self):
-        """UPDATE THREAT INTELLIGENCE: Regenerate threat intelligence from datasets"""
-        if not self.data_analyzer:
-            messagebox.showwarning("Data Analyzer Unavailable", 
-                                 "Email dataset analyzer is not available")
-            return
-        
-        # Confirm action
-        result = messagebox.askyesno("Update Threat Intelligence", 
-                                   "This will analyze email datasets to generate new threat intelligence.\n\n"
-                                   "This may take several minutes depending on dataset size.\n\n"
-                                   "Continue?")
-        if not result:
-            return
-        
-        # Update status
-        self.status_label.config(text="Updating threat intelligence...")
-        self.root.update()
-        
-        try:
-            # Generate new threat intelligence
-            threat_intel = self.data_analyzer.generate_threat_intelligence()
-            
-            if threat_intel:
-                # Update detector with new intelligence
-                self.detector.threat_intelligence = threat_intel
-                
-                # Refresh displays
-                self.refresh_system_info()
-                
-                # Show success message
-                keywords = len(threat_intel.get('suspicious_keywords', {}))
-                domains = len(threat_intel.get('suspicious_domains', {}))
-                
-                messagebox.showinfo("Update Complete", 
-                                  f"Threat intelligence updated successfully!\n\n"
-                                  f"New patterns discovered:\n"
-                                  f"• {keywords} suspicious keywords\n"
-                                  f"• {domains} suspicious domains\n\n"
-                                  f"Detection accuracy has been enhanced.")
-                
-                self.status_label.config(text="Threat intelligence updated successfully")
-            else:
-                messagebox.showwarning("Update Failed", 
-                                     "Could not generate threat intelligence.\n\n"
-                                     "Please check that email datasets are available.")
-                self.status_label.config(text="Threat intelligence update failed")
-        
-        except Exception as e:
-            messagebox.showerror("Update Error", f"Error updating threat intelligence: {str(e)}")
-            self.status_label.config(text="Threat intelligence update error")
-    
-    def test_email_datasets(self):
-        """TEST EMAIL DATASETS: Verify dataset parsing functionality"""
-        if not self.data_analyzer:
-            messagebox.showwarning("Data Analyzer Unavailable", 
-                                 "Email dataset analyzer is not available")
-            return
-        
-        # Create a new window for test results
-        test_window = tk.Toplevel(self.root)
-        test_window.title("Email Dataset Testing")
-        test_window.geometry("800x600")
-        
-        # Create scrolled text for results
-        test_frame = ttk.Frame(test_window, padding="15")
-        test_frame.pack(fill=tk.BOTH, expand=True)
-        
-        test_text = scrolledtext.ScrolledText(test_frame, width=90, height=35, 
-                                            wrap=tk.WORD, font=('Arial', 10))
-        test_text.pack(fill=tk.BOTH, expand=True)
-        
-        # Run test and display results
-        test_text.insert(tk.END, "🧪 EMAIL DATASET PARSING TEST\n")
-        test_text.insert(tk.END, "=" * 50 + "\n\n")
-        
-        try:
-            # Redirect print output to the text widget
-            import io
-            import sys
-            
-            old_stdout = sys.stdout
-            sys.stdout = io.StringIO()
-            
-            # Run the test
-            self.data_analyzer.test_email_parsing(num_samples=5)
-            
-            # Get the output
-            output = sys.stdout.getvalue()
-            sys.stdout = old_stdout
-            
-            # Display the output
-            test_text.insert(tk.END, output)
-            
-        except Exception as e:
-            test_text.insert(tk.END, f"Error running dataset test: {str(e)}\n")
-        
-        # Add close button
-        close_btn = ttk.Button(test_frame, text="Close", 
-                             command=test_window.destroy)
-        close_btn.pack(pady=10)
 
+
+# ============================================================================
+#                           MAIN APPLICATION ENTRY POINT
+# ============================================================================
 
 def main():
     """
-    MAIN APPLICATION ENTRY POINT
+    START THE PHISHGUARD GUI APPLICATION
     
-    This starts the GUI application and handles any startup errors gracefully.
+    This is the function that gets called when you run this file.
+    It creates the main window and starts the GUI.
+    
+    WHAT HAPPENS:
+    1. Create the main tkinter window
+    2. Initialize the PhishingDetectorGUI class
+    3. Start the GUI event loop (waits for user input)
+    4. Handle any startup errors gracefully
     """
     try:
-        print("🚀 Starting Phishing Detection GUI...")
+        print("🚀 Starting PhishGuard Email Security GUI...")
         
-        # Create main application window
+        # STEP 1: Create the main application window
         root = tk.Tk()
         
-        # Initialize and run the application
+        # STEP 2: Initialize our GUI application
         app = PhishingDetectorGUI(root)
         
         print("✅ GUI initialized successfully")
-        print("📱 Application ready for use")
+        print("📱 PhishGuard is ready! Look for the GUI window on your screen.")
         
-        # Start the GUI event loop
+        # STEP 3: Start the GUI event loop (this keeps the window open)
         root.mainloop()
         
     except Exception as e:
-        print(f"❌ Failed to start application: {e}")
+        # If something goes wrong during startup, show a helpful error
+        print(f"❌ Failed to start PhishGuard: {e}")
         try:
             messagebox.showerror("Startup Error", 
-                               f"Failed to start the application:\n\n{str(e)}\n\n"
+                               f"PhishGuard failed to start:\n\n{str(e)}\n\n"
                                f"Please check that all required files are present.")
         except:
             print("Could not show error dialog - GUI system unavailable")
 
 
+# ============================================================================
+#                              RUN THE APPLICATION
+# ============================================================================
+
 if __name__ == "__main__":
-    # Import datetime here for timestamp functionality
+    # Import datetime here for timestamp functionality (used in results)
     from datetime import datetime
     
+    print("=" * 60)
+    print("           PHISHGUARD EMAIL SECURITY SYSTEM")
+    print("=" * 60)
+    print("Starting GUI application...")
+    print()
+    
+    # Start the application
     main()
