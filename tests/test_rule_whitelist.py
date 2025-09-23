@@ -38,25 +38,25 @@ EXAMPLE_WHITELIST =  {"rules": {
 
 class TestWhitelist(unittest.TestCase):
     
-    # def test_enabled_true(self): # TestCase: Whitelist Check "enabled:true"
-    #     TEST_ENABLED_TRUE: Dict = copy.deepcopy(EXAMPLE_WHITELIST)
-    #     TEST_ENABLED_TRUE['rules']['whitelist']['enabled']  = True
-    #     hit = check_domain_whitelist(BASE_REC, TEST_ENABLED_TRUE)
+    def test_enabled_true(self): # TestCase: Whitelist Check "enabled:true"
+        TEST_ENABLED_TRUE: Dict = copy.deepcopy(EXAMPLE_WHITELIST)
+        TEST_ENABLED_TRUE['rules']['whitelist']['enabled']  = True
+        hit = check_domain_whitelist(BASE_REC, TEST_ENABLED_TRUE)
         
-    #     # expected -0.5, because Whitelist is enabled and BASE_REC.from_addr is in whitelist
+        # expected -0.5, because Whitelist is enabled and BASE_REC.from_addr is in whitelist
         
-    #     self.assertEqual(hit.score_delta, -0.5) 
+        self.assertEqual(hit.score_delta, -0.5) 
         
         
     
-    # def test_enabled_false(self): # TestCase: Whitelist Check "enabled:false"
-    #     TEST_ENABLED_FALSE: Dict = copy.deepcopy(EXAMPLE_WHITELIST)
-    #     TEST_ENABLED_FALSE['rules']['whitelist']['enabled']  = False
-    #     hit = check_domain_whitelist(BASE_REC, TEST_ENABLED_FALSE)
+    def test_enabled_false(self): # TestCase: Whitelist Check "enabled:false"
+        TEST_ENABLED_FALSE: Dict = copy.deepcopy(EXAMPLE_WHITELIST)
+        TEST_ENABLED_FALSE['rules']['whitelist']['enabled']  = False
+        hit = check_domain_whitelist(BASE_REC, TEST_ENABLED_FALSE)
         
-    #     # expected 0.0, because Whitelist is disabled no checks were doner, although BASE_REC.from_addr is in whitelist
+        # expected 0.0, because Whitelist is disabled no checks were done, although BASE_REC.from_addr is in whitelist
         
-    #     self.assertEqual(hit.score_delta, 0.0)
+        self.assertEqual(hit.score_delta, 0.0)
     
     
     
@@ -69,19 +69,34 @@ class TestWhitelist(unittest.TestCase):
         
         CS_SUBD_REC = copy.deepcopy(BASE_REC)
         CS_SUBD_REC.from_addr = "support@cs.nus.edu.sg" # subdomain cs
-        print(CS_SUBD_REC)
         
         MEDS_SUBD_REC = copy.deepcopy(BASE_REC)
         MEDS_SUBD_REC.from_addr = "support@meds.nus.edu.sg" # subdomain meds
         
-        # nosubdomain_hit = check_domain_whitelist(BASE_REC, TEST_SUBDOMAIN_ENABLED)
+        NONWHITELISTED_DOMAIN = copy.deepcopy(BASE_REC) # subdomain and domain not whitelisted
+        NONWHITELISTED_DOMAIN.from_addr = "support@sg.ntu.edu.sg"
+        
+        INVALID_EMAIL_FORMAT = copy.deepcopy(BASE_REC) # email without @ sign 
+        INVALID_EMAIL_FORMAT.from_addr = "asfgoogle.com"
+        
+        EMPTY_EMAIL = copy.deepcopy(BASE_REC)
+        EMPTY_EMAIL.from_addr = ""
+        
+        
+        nosubdomain_hit = check_domain_whitelist(BASE_REC, TEST_SUBDOMAIN_ENABLED)
         cs_hit = check_domain_whitelist(CS_SUBD_REC, TEST_SUBDOMAIN_ENABLED)
         meds_hit = check_domain_whitelist(MEDS_SUBD_REC, TEST_SUBDOMAIN_ENABLED)
+        ntu_hit = check_domain_whitelist(NONWHITELISTED_DOMAIN, TEST_SUBDOMAIN_ENABLED)
+        invalid_hit = check_domain_whitelist(INVALID_EMAIL_FORMAT, TEST_SUBDOMAIN_ENABLED)
+        empty_hit = check_domain_whitelist(EMPTY_EMAIL, TEST_SUBDOMAIN_ENABLED)
         
+        
+        print(nosubdomain_hit)
         print(cs_hit)
-        
-        
-        
+        print(meds_hit)
+        print(ntu_hit)
+        print(invalid_hit)
+        print(empty_hit)
         # expected -0.5, BASE_REC.from_addr is in whitelist
         
         
