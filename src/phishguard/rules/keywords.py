@@ -11,6 +11,7 @@ def _compile_pattern(phrase: str, ci: bool, word_boundaries: bool) -> re.Pattern
         if word_boundaries is True, the pattern will match whole words only.
         if Case Insensitive (ci) is True, the pattern will be case insensitive.
     """
+    
     core_pattern = re.escape(phrase)
     if word_boundaries:
         pattern = r'\b' + core_pattern + r'\b'
@@ -23,6 +24,7 @@ def _count_occurrence(text: str, pattern: re.Pattern) -> int:
     """
         Count occurrences of a pattern in a text.
     """
+
     if not text:
         return 0
     return sum(1 for _ in pattern.finditer(text)) # More memory efficient than len(pattern.findall(text))'
@@ -32,6 +34,7 @@ def _allocate_with_cap(segment_counts: List[Tuple[str, int, float]], per_phrase_
         Allocate occurrences to segments, favoring higher positions first (subject > intro > body).
         Returns (effective_weighted_occurrence, [(segment, count), ...])
     """
+
     ordered = sorted(segment_counts, key=lambda x: x[2], reverse=True)  # Sort by weight in descending order
     remaining = per_phrase_max
     effective_weighted_occurrence = 0.0
@@ -55,6 +58,7 @@ def rule_keywords(rec: EmailRecord, config: Dict) -> RuleHit:
         weight and position in the email. Higher weight is given to keywords found in Subject and Intro 
         (first 200 characters). The scores are also capped by per_phrase_max and max_total.
     """
+
     cfg = (config or {}).get("rules", {}).get("keywords", {})
     if not cfg.get("enabled", True):
         return RuleHit("keywords", True, 0.0, Severity.LOW, {"reason": "rule disabled"})

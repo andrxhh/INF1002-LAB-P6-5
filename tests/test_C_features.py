@@ -4,7 +4,7 @@ from phishguard.features.extractors import extract_urls, extract_url_pairs, extr
 from phishguard.schema.classes import EmailRecord
 
 record = []
-for origin, message in iterate_emails(r"C:\Users\Cheston\Desktop\Krabby Patty Secret Recipe\SIT\INF 1002 - Programming Fundamentals\Python Project\emails\dev\spam\00051.fd20658f0e586d1f27f9396401f4981c"):
+for origin, message in iterate_emails(r"C:\Users\Cheston\Desktop\Krabby Patty Secret Recipe\SIT\INF 1002 - Programming Fundamentals\Python Project\emails\dev\spam\00061.bec763248306fb3228141491856ed216"):
     header = normalize_header(message)
     from_display, from_addr, reply_to_addr = decode_address(message)
     body_text, body_html = extract_body(message)
