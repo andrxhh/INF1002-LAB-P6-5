@@ -1,0 +1,50 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Dict, Iterable, List, Tuple
+from email.message import EmailMessage
+
+from phishguard.schema import EmailRecord, RuleHit
+from phishguard.ingestion.loaders import iterate_emails
+from phishguard.normalize.parse_mime import normalize_header, decode_address, extract_body
+from phishguard.features.extractors import extract_urls, extract_attachments
+from phishguard.scoring.aggregate import RuleFunction, evaluate_email
+
+def build_email_record(msg: EmailMessage) -> EmailRecord:
+    header = normalize_header(msg)
+    from_display, from_addr, reply_to_addr = decode_address(msg)
+    body_text, body_html = extract_body(msg)
+    urls, url_pairs = extract_urls(body_text, body_html)
+    attachments = extract_attachments(msg)
+    spf, dkim, dmarc = None, None, None  # Placeholder for actual SPF, DKIM, DMARC checks
+
+    rec = EmailRecord(
+        from_display=from_display,
+        from_addr=from_addr,
+        reply_to_addr=reply_to_addr,
+        subject=header.get('subject', ''),
+        body_text=body_text,
+        body_html=body_html,
+        urls=urls,
+        url_display_pairs=url_pairs,
+        attachments=attachments,
+        headers=header,
+        spf_pass=spf,
+        dkim_pass=dkim,
+        dmarc_pass=dmarc
+    )
+
+    return rec
+
+def evaluate_email_file(source: Path, rules: Iterable[RuleFunction], config: Dict) -> List[Tuple[str, float, str, list[RuleHit]]]:
+    """
+        Pipeline for evaluating a single email file or a directory of email files.
+        Build email records for each email, run the rules and classify them.
+        Returns a list of tuples[filename, score, classification, hits]
+    """
+    results: List[Tuple[str, float, str, list[RuleHit]]] = []
+    for origin, msg in iterate_emails(source):
+        rec = build_email_record(msg)
+        total_score, label, hits = evaluate_email(rec, rules, config)
+        results.append((str(origin), total_score, label, hits))
+    return results
