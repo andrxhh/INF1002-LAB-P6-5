@@ -1,0 +1,65 @@
+{
+  "metadata": {
+    "created": "2025-09-24T00:50:44.560339",
+    "total_emails": 7,
+    "format_version": "1.0"
+  },
+  "emails": [
+    {
+      "fromEmail": "security@paypaI.com",
+      "Subject": "URGENT: Your Account Will Be Suspended",
+      "Body": "Dear Valued Customer,\n\nYour PayPal account has been temporarily limited due to suspicious activity detected on your account. \n\nTo avoid permanent suspension, you must verify your account information immediately by clicking the link below:\n\nVERIFY YOUR ACCOUNT NOW: http://bit.ly/paypal-verify-urgent\n\nWARNING: Failure to verify within 24 hours will result in permanent account closure and loss of funds.\n\nIf you have any questions, please do not hesitate to contact our customer service team.\n\nBest r...",
+      "threatLevel": "Critical",
+      "timestamp": "2025-09-23T23:08:43.156984",
+      "analysis_details": {}
+    },
+    {
+      "fromEmail": "security@paypaI.com",
+      "Subject": "URGENT: Your Account Will Be Suspended",
+      "Body": "Dear Valued Customer,\n\nYour PayPal account has been temporarily limited due to suspicious activity detected on your account. \n\nTo avoid permanent suspension, you must verify your account information immediately by clicking the link below:\n\nVERIFY YOUR ACCOUNT NOW: http://bit.ly/paypal-verify-urgent\n\nWARNING: Failure to verify within 24 hours will result in permanent account closure and loss of funds.\n\nIf you have any questions, please do not hesitate to contact our customer service team.\n\nBest r...",
+      "threatLevel": "Critical",
+      "timestamp": "2025-09-23T23:23:23.004406",
+      "analysis_details": {}
+    },
+    {
+      "fromEmail": "security@paypaI.com",
+      "Subject": "URGENT: Your Account Will Be Suspended",
+      "Body": "Dear Valued Customer,\n\nYour PayPal account has been temporarily limited due to suspicious activity detected on your account. \n\nTo avoid permanent suspension, you must verify your account information immediately by clicking the link below:\n\nVERIFY YOUR ACCOUNT NOW: http://bit.ly/paypal-verify-urgent\n\nWARNING: Failure to verify within 24 hours will result in permanent account closure and loss of funds.\n\nIf you have any questions, please do not hesitate to contact our customer service team.\n\nBest r...",
+      "threatLevel": "Critical",
+      "timestamp": "2025-09-23T23:38:33.189473",
+      "analysis_details": {}
+    },
+    {
+      "fromEmail": "security@paypaI.com",
+      "Subject": "URGENT: Your Account Will Be Suspended",
+      "Body": "Dear Valued Customer,\n\nYour PayPal account has been temporarily limited due to suspicious activity detected on your account. \n\nTo avoid permanent suspension, you must verify your account information immediately by clicking the link below:\n\nVERIFY YOUR ACCOUNT NOW: http://bit.ly/paypal-verify-urgent\n\nWARNING: Failure to verify within 24 hours will result in permanent account closure and loss of funds.\n\nIf you have any questions, please do not hesitate to contact our customer service team.\n\nBest r...",
+      "threatLevel": "Critical",
+      "timestamp": "2025-09-23T23:53:02.910619",
+      "analysis_details": {}
+    },
+    {
+      "fromEmail": "security@paypaI.com",
+      "Subject": "URGENT: Your Account Will Be Suspended",
+      "Body": "Dear Valued Customer,\n\nYour PayPal account has been temporarily limited due to suspicious activity detected on your account. \n\nTo avoid permanent suspension, you must verify your account information immediately by clicking the link below:\n\nVERIFY YOUR ACCOUNT NOW: http://bit.ly/paypal-verify-urgent\n\nWARNING: Failure to verify within 24 hours will result in permanent account closure and loss of funds.\n\nIf you have any questions, please do not hesitate to contact our customer service team.\n\nBest r...",
+      "threatLevel": "Critical",
+      "timestamp": "2025-09-23T23:55:31.060058",
+      "analysis_details": {}
+    },
+    {
+      "fromEmail": "ewewf",
+      "Subject": "asfas",
+      "Body": "asfasf",
+      "threatLevel": "Low",
+      "timestamp": "2025-09-24T00:50:43.859694",
+      "analysis_details": {}
+    },
+    {
+      "fromEmail": "test@example.com",
+      "Subject": "Test Subject",
+      "Body": "This is a test email body",
+      "threatLevel": "Low",
+      "timestamp": "2025-09-24T00:50:44.560329",
+      "analysis_details": {}
+    }
+  ]
+}
