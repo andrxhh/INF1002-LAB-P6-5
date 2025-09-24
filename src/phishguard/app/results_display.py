@@ -1,4 +1,4 @@
-# Results Display Module
+# Results Display Module - Simplified Pipeline Integration
 import tkinter as tk
 from typing import Dict, List, Any
 from phishguard.schema import EmailRecord, RuleHit
@@ -28,28 +28,25 @@ class ResultsDisplayManager:
             widget.tag_configure("header", foreground="white", font=('Arial', 12, 'bold'))
             widget.tag_configure("subheader", foreground="purple", font=('Arial', 12, 'bold'))
 
-
 # ====================================================================
 #                    UI Entry Points (Setup UI to be displayed)      =
 # ====================================================================
 
     def display_individual_results(self, email_record: EmailRecord, total_score: float, rule_hits: List[RuleHit], config: Dict[str, Any]):
-        # Display results for ONE email analysis
-        # Transform raw data into display-ready format
-        display_data = self._format_email_for_display(email_record, total_score, rule_hits, config)
+        # Display results for ONE email analysis using pipeline data
+        classification = self._determine_classification(total_score, config)
         
         # Render formatted data in GUI
         self._display_results_safely(self.results_text, lambda: [
             self._show_report_header(),
             self._show_email_details(email_record),
-            self._show_security_verdict(display_data),
-            self._show_detailed_analysis(display_data),
-            self._show_security_recommendations(display_data['classification'])
+            self._show_security_verdict(classification, total_score),
+            self._show_detailed_analysis(rule_hits),
+            self._show_security_recommendations(classification)
         ])
 
     def display_batch_results(self, batch_results):
         # Display results for MULTIPLE email analysis
-        # Render batch data in GUI
         self._display_results_safely(self.batch_results_text, lambda: [
             self._show_batch_header(),
             self._show_executive_summary(batch_results['summary']),
@@ -59,41 +56,24 @@ class ResultsDisplayManager:
 
     def format_batch_analysis_results(self, email_record: EmailRecord, total_score: float, rule_hits: List[RuleHit], config: Dict[str, Any], email_number: int) -> Dict[str, Any]:
         # Format individual email for inclusion in batch display
-        display_data = self._format_email_for_display(email_record, total_score, rule_hits, config)
-        
-        # Add batch-specific metadata
-        display_data['email_number'] = email_number
-        display_data['email_data'] = {
-            'sender': email_record.from_addr,
-            'subject': email_record.subject,
-            'body_length': len(email_record.body_text or '')
-        }
-        return display_data
-
-
-# ==============================================================================
-#          Transform raw data into display-ready format                       =
-# ==============================================================================
-
-    def _format_email_for_display(self, email_record: EmailRecord, total_score: float, rule_hits: List[RuleHit], config: Dict[str, Any]) -> Dict[str, Any]:
-        # Determine overall threat classification
         classification = self._determine_classification(total_score, config)
         
-        # Organize rule results by security category
-        rule_results = self._extract_rule_results(rule_hits, email_record, config)
-        
-        # Package everything into clean display format
         return {
-            'classification': classification,       # "SAFE", "SUSPICIOUS", or "PHISHING"
-            'final_score': total_score,            # Numerical risk score
-            'whitelist': rule_results['whitelist'], # Domain trust analysis
-            'keywords': rule_results['keywords'],   # Suspicious content analysis   
-            'spoofing': rule_results['spoofing'],   # Domain impersonation analysis
-            'urls': rule_results['urls'],           # Link security analysis
-            'rule_hits': rule_hits,                # Raw data for advanced users
-            'max_score': 50                        # Maximum possible score
+            'classification': classification,
+            'final_score': total_score,
+            'email_number': email_number,
+            'email_data': {
+                'sender': email_record.from_addr,
+                'subject': email_record.subject,
+                'body_length': len(email_record.body_text or '')
+            },
+            'rule_hits': rule_hits
         }
-    
+
+# ==============================================================================
+#          Helper Functions                                                   =
+# ==============================================================================
+
     def _determine_classification(self, total_score: float, config: Dict[str, Any]) -> str:
         # Convert score to threat level
         thresholds = config.get('thresholds', {})
@@ -106,60 +86,6 @@ class ResultsDisplayManager:
             return "PHISHING"
         else:
             return "SUSPICIOUS"
-    
-    def _extract_rule_results(self, rule_hits: List[RuleHit], email_record: EmailRecord, config: Dict[str, Any]) -> Dict[str, Any]:
-        # Find specific rule results
-        whitelist_hit = next((hit for hit in rule_hits if hit.rule_name == 'whitelist'), None)
-        keywords_hit = next((hit for hit in rule_hits if hit.rule_name == 'keywords'), None)
-        urls_hit = next((hit for hit in rule_hits if hit.rule_name == 'url_redflags'), None)
-        lookalike_hit = next((hit for hit in rule_hits if hit.rule_name == 'lookalike_domain'), None)
-        
-        return {
-            'whitelist': self._format_whitelist_results(whitelist_hit),
-            'keywords': self._format_keywords_results(keywords_hit, config),
-            'spoofing': self._format_spoofing_results(lookalike_hit),
-            'urls': self._format_url_results(urls_hit, email_record)
-        }
-    
-    # Convert raw rule data to display format
-    def _format_whitelist_results(self, whitelist_hit) -> Dict[str, Any]:
-        return {
-            'is_safe': whitelist_hit.passed if whitelist_hit else False,
-            'score': abs(whitelist_hit.score_delta) if whitelist_hit else 0.0
-        }
-    
-    def _format_keywords_results(self, keywords_hit, config) -> Dict[str, Any]:
-        keywords_found = []
-        if keywords_hit and not keywords_hit.passed:
-            keywords_found = list(config.get('rules', {}).get('keywords', {}).get('weights', {}).keys())[:5]
-        
-        return {
-            'found': keywords_found,
-            'score': keywords_hit.score_delta if keywords_hit else 0.0
-        }
-    
-    def _format_spoofing_results(self, lookalike_hit) -> Dict[str, Any]:
-        return {
-            'detected': lookalike_hit and not lookalike_hit.passed,
-            'reason': lookalike_hit.details.get('reason', 'Domain similarity detected') if lookalike_hit and not lookalike_hit.passed else '',
-            'score': lookalike_hit.score_delta if lookalike_hit else 0.0
-        }
-    
-    def _format_url_results(self, urls_hit, email_record) -> Dict[str, Any]:
-        suspicious_urls = []
-        if urls_hit and not urls_hit.passed:
-            for url in email_record.urls:
-                suspicious_urls.append(f"{url} (suspicious patterns detected)")
-        
-        return {
-            'suspicious': suspicious_urls,
-            'score': urls_hit.score_delta if urls_hit else 0.0
-        }
-
-
-# ==============================================================================
-#              GUI Setup (for batch & Individual)                             =
-# ==============================================================================
 
     def _display_results_safely(self, widget, content_func):
         # STEP 1: Enable editing & clear old content
@@ -172,9 +98,8 @@ class ResultsDisplayManager:
         # STEP 3: Make read-only (prevents editing)
         widget.config(state=tk.DISABLED)
 
-
 # ==============================================================================
-#         SECTION 4: CONTENT RENDERERS (Generate Display Sections)
+#         CONTENT RENDERERS (Generate Display Sections)                      =
 # ==============================================================================
 
     # INDIVIDUAL EMAIL CONTENT RENDERERS    
@@ -190,11 +115,8 @@ class ResultsDisplayManager:
         self.results_text.insert(tk.END, f"   Subject: {email_record.subject}\n")
         self.results_text.insert(tk.END, f"   Body Length: {len(email_record.body_text or '')} characters\n\n")
     
-    def _show_security_verdict(self, display_data):
+    def _show_security_verdict(self, classification: str, score: float):
         # main security classification
-        classification = display_data['classification']
-        score = display_data['final_score']
-        
         self.results_text.insert(tk.END, "SECURITY VERDICT:\n", "subheader")
         self.results_text.insert(tk.END, "   Classification: ")
         
@@ -212,59 +134,29 @@ class ResultsDisplayManager:
         self.results_text.insert(tk.END, f"   Risk Score: {score}/50\n")
         self.results_text.insert(tk.END, f"   Assessment: {explanation}\n\n")
     
-    def _show_detailed_analysis(self, display_data):
+    def _show_detailed_analysis(self, rule_hits: List[RuleHit]):
         # detailed breakdown of all security checks
         self.results_text.insert(tk.END, "DETAILED SECURITY ANALYSIS:\n", "subheader")
         self.results_text.insert(tk.END, "-" * 50 + "\n\n")
         
-        # analysis section
-        self._render_whitelist_analysis(display_data['whitelist'])
-        self._render_content_analysis(display_data['keywords'])
-        self._render_spoofing_analysis(display_data['spoofing'])
-        self._render_url_analysis(display_data['urls'])
+        # Group rule hits by type
+        failed_rules = [hit for hit in rule_hits if not hit.passed]
+        passed_rules = [hit for hit in rule_hits if hit.passed]
+        
+        if failed_rules:
+            self.results_text.insert(tk.END, "⚠️  SECURITY CONCERNS DETECTED:\n")
+            for rule in failed_rules:
+                self.results_text.insert(tk.END, f"   • {rule.rule_name.replace('_', ' ').title()}: {rule.details.get('reason', 'Security issue detected')}\n")
+                self.results_text.insert(tk.END, f"     Risk Points: {rule.score_delta}\n")
+            self.results_text.insert(tk.END, "\n")
+        
+        if passed_rules:
+            self.results_text.insert(tk.END, "✅ SECURITY CHECKS PASSED:\n")
+            for rule in passed_rules:
+                self.results_text.insert(tk.END, f"   • {rule.rule_name.replace('_', ' ').title()}: {rule.details.get('reason', 'No issues detected')}\n")
+            self.results_text.insert(tk.END, "\n")
     
-    def _render_whitelist_analysis(self, whitelist):
-        # Render sender domain trust analysis
-        self.results_text.insert(tk.END, "Sender Domain Analysis:\n")
-        if whitelist['is_safe']:
-            self.results_text.insert(tk.END, "   SAFE: Sender domain is in trusted whitelist\n", "safe")
-        else:
-            self.results_text.insert(tk.END, "   WARNING: Sender domain not in trusted whitelist\n")
-        self.results_text.insert(tk.END, f"   Risk Points: {whitelist['score']}\n\n")
-    
-    def _render_content_analysis(self, keywords):
-        # Render email content analysis
-        self.results_text.insert(tk.END, "Content Analysis:\n")
-        if keywords['found']:
-            self.results_text.insert(tk.END, f"   WARNING: Suspicious keywords detected:\n")
-            for keyword in keywords['found'][:10]:
-                self.results_text.insert(tk.END, f"      • {keyword}\n")
-        else:
-            self.results_text.insert(tk.END, "   SAFE: No suspicious keywords detected\n", "safe")
-        self.results_text.insert(tk.END, f"   Risk Points: {keywords['score']}\n\n")
-    
-    def _render_spoofing_analysis(self, spoofing):
-        # Spoofing analysis
-        self.results_text.insert(tk.END, "Domain Spoofing Analysis:\n")
-        if spoofing['detected']:
-            self.results_text.insert(tk.END, f"   ALERT: Potential domain spoofing detected\n")
-            self.results_text.insert(tk.END, f"   Details: {spoofing['reason']}\n")
-        else:
-            self.results_text.insert(tk.END, "   SAFE: No domain spoofing detected\n", "safe")
-        self.results_text.insert(tk.END, f"   Risk Points: {spoofing['score']}\n\n")
-    
-    def _render_url_analysis(self, urls):
-        # URL security analysis
-        self.results_text.insert(tk.END, "URL Security Analysis:\n")
-        if urls['suspicious']:
-            self.results_text.insert(tk.END, f"   ALERT: {len(urls['suspicious'])} suspicious URLs detected:\n")
-            for i, url in enumerate(urls['suspicious'][:5]):
-                self.results_text.insert(tk.END, f"      {i+1}. {url}\n")
-        else:
-            self.results_text.insert(tk.END, "   SAFE: No suspicious URLs detected\n", "safe")
-        self.results_text.insert(tk.END, f"   Risk Points: {urls['score']}\n\n")
-    
-    def _show_security_recommendations(self, classification):
+    def _show_security_recommendations(self, classification: str):
         # Actionable security advice
         self.results_text.insert(tk.END, "SECURITY RECOMMENDATIONS:\n", "subheader")
         self.results_text.insert(tk.END, "-" * 40 + "\n")
@@ -275,9 +167,12 @@ class ResultsDisplayManager:
         elif classification == "SUSPICIOUS":
             self.results_text.insert(tk.END, "CAUTION: Exercise caution with this email:\n", "suspicious")
             self.results_text.insert(tk.END, "   • Verify sender identity through alternative means\n")
+            self.results_text.insert(tk.END, "   • Avoid clicking any links until verified\n")
         else:  # PHISHING
             self.results_text.insert(tk.END, "SECURITY ALERT - Likely phishing attempt:\n", "phishing")
             self.results_text.insert(tk.END, "   • DO NOT click any links in this email\n")
+            self.results_text.insert(tk.END, "   • DO NOT provide any personal information\n")
+            self.results_text.insert(tk.END, "   • Report this email to your IT security team\n")
 
     # BATCH EMAIL CONTENT RENDERERS
     def _show_batch_header(self):
@@ -332,6 +227,12 @@ class ResultsDisplayManager:
         if summary['phishing_count'] > 0:
             self.batch_results_text.insert(tk.END, "IMMEDIATE ACTIONS:\n", "phishing")
             self.batch_results_text.insert(tk.END, "   • Review all PHISHING emails immediately\n")
+            self.batch_results_text.insert(tk.END, "   • Implement additional security measures\n")
+        
+        if summary['suspicious_count'] > 0:
+            self.batch_results_text.insert(tk.END, "CAUTIONARY MEASURES:\n", "suspicious")
+            self.batch_results_text.insert(tk.END, "   • Review suspicious emails with security team\n")
         
         self.batch_results_text.insert(tk.END, "ONGOING SECURITY:\n")
         self.batch_results_text.insert(tk.END, "   • Conduct regular security awareness training\n")
+        self.batch_results_text.insert(tk.END, "   • Implement email filtering and monitoring\n")

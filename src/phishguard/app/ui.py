@@ -1,7 +1,4 @@
-#UI Module
-#====================================
-#          Imports                  =
-#====================================
+# PhishGuard UI Module
 import tkinter as tk
 from tkinter import ttk
 from tkinter import scrolledtext
@@ -11,52 +8,39 @@ import os
 import sys
 from pathlib import Path
 
-#====================================
-#          Project Root            =
-#====================================
+# Project path setup
 project_root = Path(__file__).parent.parent.parent.parent
 src_path = project_root / "src"
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
-#====================================
-#          Imports                  =
-#====================================
+# PhishGuard imports
 try:
     from phishguard.app.detector_engine import PhishingDetector
     from phishguard.app.results_display import ResultsDisplayManager
-# help us catch import errors
 except ImportError as e:
     messagebox.showerror("Import Error", str(e))
     sys.exit(1)
-    
-        #====================================
-        #          GUI Class               =
-        #====================================
 class PhishingDetectorGUI:
     
     def __init__(self, root):
         self.root = root
         
         try:
+            # Initialize the simplified detector engine
             self.detector = PhishingDetector()
-# help us catch startup errors
         except Exception as e:
             messagebox.showerror("Startup Error", str(e))
             sys.exit(1)
         
         self.current_batch_results = None
-        
-        #====================================
-        #        Setup UI (main window)     =
-        #==================================== 
         self.setup_ui()
-    #top window title and size
     def setup_ui(self):
         self.root.title("PhishGuard - Email Detection System")
         self.root.geometry("1000x800")
         self.root.configure(bg='#f0f0f0')
-        #window icon (use the same App Logo)
+        
+        # Window icon setup
         try:
             # Try to find the logo file in the app directory for window icon
             icon_path = Path(__file__).parent / 'App Logo.png'
@@ -297,10 +281,10 @@ class PhishingDetectorGUI:
         self.root.update()
         
         try:
-            # Send email data to the detection engine
+            # Use simplified detector engine
             email_record, total_score, rule_hits = self.detector.analyze_email(sender, subject, body)
             
-            # Display the results using raw analysis data
+            # Display the results using simplified display
             self.results_display.display_individual_results(email_record, total_score, rule_hits, self.detector.config)
             
         except Exception as e:
@@ -324,7 +308,8 @@ class PhishingDetectorGUI:
         self.clear_fields()
         
         # Sample phishing email data - when button is clicked this is the email that will be loaded
-        sample_sender = "security@paypaI.com"
+        # This sample demonstrates pipeline integration with a realistic phishing attempt
+        sample_sender = "security@paypaI.com"  # Note the 'I' instead of 'l' - common spoofing technique
         sample_subject = "URGENT: Your Account Will Be Suspended"
         sample_body = """Dear Valued Customer,
 
@@ -392,7 +377,6 @@ This email was sent to protect your account security."""
         if file_path:
             # Store the selected file path
             self.file_path_var.set(file_path)
-            print(f"Selected file: {file_path}")
     
     def _browse_folder(self):
         """Browse and select a folder containing email files"""
@@ -405,18 +389,7 @@ This email was sent to protect your account security."""
         if folder_path:
             # Store the selected folder path
             self.file_path_var.set(folder_path)
-            print(f"Selected folder: {folder_path}")
             
-            # Quick preview of what's in the folder
-            try:
-                import os
-                files = [f for f in os.listdir(folder_path) 
-                        if f.lower().endswith(('.txt', '.mbox'))]
-                print(f"Found {len(files)} email files in folder")
-                if files:
-                    print(f"Examples: {', '.join(files[:3])}{'...' if len(files) > 3 else ''}")
-            except Exception as e:
-                print(f"Could not preview folder contents: {e}")
     
     def analyze_batch(self):
         # Get the selected file/folder path from the selection field
@@ -454,8 +427,6 @@ This email was sent to protect your account security."""
                                "The selected path is neither a file nor a folder")
             return
         
-        # Show status message
-        print(status_msg)
         
         # Prepare the results display area
         self.batch_results_text.config(state=tk.NORMAL)    # Enable editing temporarily
@@ -470,7 +441,7 @@ This email was sent to protect your account security."""
         self.root.update()  # Update UI to show the message
         
         try:
-            # Send file/folder to detection engine (your friend's pipeline handles both!)
+            # Use simplified detector engine for batch processing
             batch_results = self.detector.analyze_batch_emails(source_path)
             
             # Check if there was an error
@@ -484,14 +455,13 @@ This email was sent to protect your account security."""
             
             # Format each individual result
             for result in batch_results['results']:
-                email_record = result['email_record']
-                total_score = result['total_score']
-                rule_hits = result['rule_hits']
-                email_number = result['email_number']
-                
                 formatted_result = self.results_display.format_batch_analysis_results(
-                    email_record, total_score, rule_hits, self.detector.config, email_number
+                    result['email_record'], result['total_score'], result['rule_hits'], 
+                    self.detector.config, result['email_number']
                 )
+                formatted_result['email_data']['sender'] = result['email_record'].from_addr
+                formatted_result['email_data']['subject'] = result['email_record'].subject
+                formatted_result['email_data']['filename'] = result.get('filename', 'Unknown')
                 formatted_results['results'].append(formatted_result)
             
             # Use the existing summary
@@ -506,8 +476,8 @@ This email was sent to protect your account security."""
         except Exception as e:
             # Handle any unexpected errors
             self.batch_results_text.delete(1.0, tk.END)
-            self.batch_results_text.insert(tk.END, "{str(e)}\n")
-            messagebox.showerror("Analysis Error", "{str(e)}")
+            self.batch_results_text.insert(tk.END, f"Error: {str(e)}\n")
+            messagebox.showerror("Analysis Error", f"Error analyzing batch: {str(e)}")
     
     
     def save_batch_results(self):
@@ -541,7 +511,7 @@ This email was sent to protect your account security."""
                 
             except Exception as e:
                 # Show error if file saving fails
-                messagebox.showerror("Save Error", "{str(e)}")
+                messagebox.showerror("Save Error", f"Error saving file: {str(e)}")
     
     def clear_batch(self):
         # Clear the file selection field
