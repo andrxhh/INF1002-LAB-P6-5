@@ -190,7 +190,7 @@
       ],
       "shortener_penalty": 1.5,
       "mismatch_label_href_penalty": 2.0,
-      "suspicious_tlds": ["zip", "top", "xyz", "ru", "cn", "kim", "rest"],
+      "suspicious_tlds": ["zip", "top", "xyz", "ru", "cn", "kim", "rest","ws"],
       "suspicious_tld_penalty": 1.0,
       "suspicious_keyword_path": [
         "free",
