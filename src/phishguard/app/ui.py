@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#UI Module
 #====================================
 #          Imports                  =
 #====================================
@@ -56,11 +56,18 @@ class PhishingDetectorGUI:
         self.root.title("PhishGuard - Email Detection System")
         self.root.geometry("1000x800")
         self.root.configure(bg='#f0f0f0')
-        #icons logo
+        #window icon (use the same App Logo)
         try:
-            icon_photo = tk.PhotoImage(file='gui icon.png') #icon TBC to be added
-            self.root.iconphoto(False, icon_photo) 
-        except Exception as e:
+            # Try to find the logo file in the app directory for window icon
+            icon_path = Path(__file__).parent / 'App Logo.png'
+            if icon_path.exists():
+                icon_photo = tk.PhotoImage(file=str(icon_path))
+                self.root.iconphoto(False, icon_photo)
+            else:
+                # Try current directory as fallback
+                icon_photo = tk.PhotoImage(file='App Logo.png')
+                self.root.iconphoto(False, icon_photo)
+        except Exception:
             pass
         
         # GUI style/theme
@@ -81,19 +88,31 @@ class PhishingDetectorGUI:
         
         #logo
         try:
-            self.logo_photo = tk.PhotoImage(file='App Logo.png')
+            # Try to find the logo file in the app directory
+            logo_path = Path(__file__).parent / 'App Logo.png'
+            if logo_path.exists():
+                self.logo_photo = tk.PhotoImage(file=str(logo_path))
+            else:
+                # Fallback: try current directory
+                self.logo_photo = tk.PhotoImage(file='App Logo.png')
+            
+            # Get original dimensions
             logo_width = self.logo_photo.width()
             logo_height = self.logo_photo.height()
-            if logo_width > 80 or logo_height > 80:
-                scale_factor = min(80/logo_width, 80/logo_height)
-                new_width = int(logo_width * scale_factor)
-                new_height = int(logo_height * scale_factor)
-                self.logo_photo = self.logo_photo.subsample(int(1/scale_factor))
+            
+            # Scale logo to fit nicely (max 60x60 pixels)
+            max_size = 60
+            if logo_width > max_size or logo_height > max_size:
+                scale_factor = min(max_size/logo_width, max_size/logo_height)
+                subsample_factor = max(1, int(1/scale_factor))
+                self.logo_photo = self.logo_photo.subsample(subsample_factor)
             
             logo_label = ttk.Label(header_frame, image=self.logo_photo)
             logo_label.grid(row=0, column=0, rowspan=2, sticky=tk.W, padx=(0, 15))
-        except Exception as e:
-            logo_label = ttk.Label(header_frame, text="[LOGO]", font=('Arial', 12, 'bold'))
+            
+        except Exception:
+            # Fallback: show shield emoji if image fails
+            logo_label = ttk.Label(header_frame, text="🛡️", font=('Arial', 20, 'bold'))
             logo_label.grid(row=0, column=0, rowspan=2, sticky=tk.W, padx=(0, 15))
         
         #title/header
@@ -191,29 +210,30 @@ class PhishingDetectorGUI:
         # Configure the main tab to expand the second column (file path field)
         self.batch_frame.columnconfigure(1, weight=1)
         
-        # File Selection Section
+        # File/Folder Selection Section
         # =============================
-        # Frames for file selection
-        file_frame = ttk.LabelFrame(self.batch_frame, text="File Selection", padding="15")
+        # Frames for file/folder selection
+        file_frame = ttk.LabelFrame(self.batch_frame, text="File or Folder Selection", padding="15")
         file_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 15))
         file_frame.columnconfigure(1, weight=1)  # Make file path field expandable
         
-        # File Path Input and Browse Button
-        ttk.Label(file_frame, text="Email File:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.file_path_var = tk.StringVar()  # Variable to store selected file path
-        self.file_path_entry = ttk.Entry(file_frame, textvariable=self.file_path_var,   # Display selected file path
+        # File/Folder Path Input and Browse Button
+        ttk.Label(file_frame, text="Email Source:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=5)
+        self.file_path_var = tk.StringVar()  # Variable to store selected file/folder path
+        self.file_path_entry = ttk.Entry(file_frame, textvariable=self.file_path_var,   # Display selected path
                                         width=60, state='readonly', font=('Arial', 10))  # Read-only (user can't type)
         self.file_path_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(10, 10), pady=5)
         
-        # Browse Button - to open files for uploading
-        browse_btn = ttk.Button(file_frame, text="Browse", command=self.browse_file)
+        # Single Browse Button that handles both files and folders
+        browse_btn = ttk.Button(file_frame, text="Browse", command=self.browse_source)
         browse_btn.grid(row=0, column=2, pady=5)
         
         # supported file formats for uploading
         instructions = ttk.Label(file_frame, 
-                                text="Supported Formats:\n"
-                                     "• Text files (.txt) - Plain text or email format\n"
-                                     "• Unix Mailbox (.mbox) - Standard Unix mbox format",
+                                text="Click Browse to select:\n"
+                                     "• Email files (.txt, .mbox) - or -\n"
+                                     "• Folders containing email files\n"
+                                     "The system automatically detects and processes all valid emails",
                                 font=('Arial', 9), foreground='gray')
         instructions.grid(row=1, column=0, columnspan=3, sticky=tk.W, pady=(10, 0))
         
@@ -262,7 +282,6 @@ class PhishingDetectorGUI:
     # ====================================
     
     def analyze_email(self):
-        """Main function to analyze a single email for phishing threats"""
         # Get user input from the form fields
         sender = self.sender_entry.get().strip()    # Remove extra spaces
         subject = self.subject_entry.get().strip()  # Remove extra spaces  
@@ -279,10 +298,10 @@ class PhishingDetectorGUI:
         
         try:
             # Send email data to the detection engine
-            results = self.detector.analyze_email(sender, subject, body)
+            email_record, total_score, rule_hits = self.detector.analyze_email(sender, subject, body)
             
-            # Display the formatted results
-            self.results_display.display_individual_results(results, sender, subject, body)
+            # Display the results using raw analysis data
+            self.results_display.display_individual_results(email_record, total_score, rule_hits, self.detector.config)
             
         except Exception as e:
             # Show error message if analysis fails
@@ -290,7 +309,6 @@ class PhishingDetectorGUI:
     
     
     def clear_fields(self):
-        """Reset all input fields and results area"""
         # Clear all input fields
         self.sender_entry.delete(0, tk.END)         # Clear sender field
         self.subject_entry.delete(0, tk.END)        # Clear subject field
@@ -302,8 +320,7 @@ class PhishingDetectorGUI:
         self.results_text.config(state=tk.DISABLED) # Disable editing again
     
     def load_sample_email(self):
-        """Load a sample phishing email for testing purposes"""
-        # First clear all existing content
+        # Clear all existing content
         self.clear_fields()
         
         # Sample phishing email data - when button is clicked this is the email that will be loaded
@@ -337,14 +354,37 @@ This email was sent to protect your account security."""
     # Batch Analysis Functions          =
     # ====================================
     
-    def browse_file(self):
-        """Open file dialog to select email file for batch processing"""
+    def browse_source(self):
+        """Smart browse function that lets user choose between file or folder"""
+        from tkinter import messagebox
+        
+        # Ask user what they want to select
+        choice = messagebox.askyesnocancel(
+            "Select Source Type",
+            "What would you like to select?\n\n"
+            "• Click 'Yes' to select an email file (.txt, .mbox)\n"
+            "• Click 'No' to select a folder containing email files\n"
+            "• Click 'Cancel' to abort"
+        )
+        
+        if choice is True:
+            # User chose to select a file
+            self._browse_file()
+        elif choice is False:
+            # User chose to select a folder
+            self._browse_folder()
+        # If choice is None, user clicked Cancel - do nothing
+    
+    def _browse_file(self):
+        """Browse and select a single email file"""
         # Show file selection dialog with supported file types
         file_path = filedialog.askopenfilename(
             title="Select Email File for Batch Analysis",
             filetypes=[
-                ("Text files", "*.txt"),        # Plain text files
-                ("Unix Mailbox", "*.mbox")      # Unix mailbox format
+                ("All Email Files", "*.txt;*.mbox"),  # Show all email files
+                ("Text files", "*.txt"),              # Plain text files
+                ("Unix Mailbox", "*.mbox"),           # Unix mailbox format
+                ("All files", "*.*")                  # All files (fallback)
             ]
         )
         
@@ -352,26 +392,86 @@ This email was sent to protect your account security."""
         if file_path:
             # Store the selected file path
             self.file_path_var.set(file_path)
+            print(f"Selected file: {file_path}")
+    
+    def _browse_folder(self):
+        """Browse and select a folder containing email files"""
+        # Show folder selection dialog
+        folder_path = filedialog.askdirectory(
+            title="Select Folder Containing Email Files"
+        )
+        
+        # If user selected a folder (didn't cancel)
+        if folder_path:
+            # Store the selected folder path
+            self.file_path_var.set(folder_path)
+            print(f"Selected folder: {folder_path}")
             
-            # File path is now displayed in the readonly text field
+            # Quick preview of what's in the folder
+            try:
+                import os
+                files = [f for f in os.listdir(folder_path) 
+                        if f.lower().endswith(('.txt', '.mbox'))]
+                print(f"Found {len(files)} email files in folder")
+                if files:
+                    print(f"Examples: {', '.join(files[:3])}{'...' if len(files) > 3 else ''}")
+            except Exception as e:
+                print(f"Could not preview folder contents: {e}")
     
     def analyze_batch(self):
-        """Process multiple emails from a file and analyze each for phishing"""
-        # Get the selected file path from the file selection field
-        file_path = self.file_path_var.get().strip()
+        # Get the selected file/folder path from the selection field
+        source_path = self.file_path_var.get().strip()
         
-        # Validate that a file has been selected
-        if not file_path:
-            messagebox.showwarning("File Required", "Please select an email file for batch analysis")
+        # Validate that a file or folder has been selected
+        if not source_path:
+            messagebox.showwarning("Source Required", 
+                                 "Please select an email file or folder using the Browse buttons")
             return
+        
+        # Check if the selected path exists
+        import os
+        if not os.path.exists(source_path):
+            messagebox.showerror("Path Not Found", 
+                               f"The selected path does not exist:\n{source_path}")
+            return
+        
+        # Determine if it's a file or folder and show appropriate message
+        if os.path.isfile(source_path):
+            source_type = "file"
+            status_msg = f"Analyzing email file: {os.path.basename(source_path)}"
+        elif os.path.isdir(source_path):
+            source_type = "folder"
+            status_msg = f"Analyzing folder: {os.path.basename(source_path)}"
+            # Quick count of email files in folder
+            try:
+                email_files = [f for f in os.listdir(source_path) 
+                             if f.lower().endswith(('.txt', '.mbox'))]
+                status_msg += f" ({len(email_files)} email files found)"
+            except:
+                pass
+        else:
+            messagebox.showerror("Invalid Path", 
+                               "The selected path is neither a file nor a folder")
+            return
+        
+        # Show status message
+        print(status_msg)
         
         # Prepare the results display area
         self.batch_results_text.config(state=tk.NORMAL)    # Enable editing temporarily
         self.batch_results_text.delete(1.0, tk.END)        # Clear previous results
         
+        # Show processing message
+        self.batch_results_text.insert(tk.END, f"🔍 {status_msg}\n")
+        if source_type == "folder":
+            self.batch_results_text.insert(tk.END, "Scanning folder and processing all email files...\n\n")
+        else:
+            self.batch_results_text.insert(tk.END, "Processing email file...\n\n")
+        self.root.update()  # Update UI to show the message
+        
         try:
-            # Send file to detection engine
-            batch_results = self.detector.analyze_batch_emails(file_path)
+            # Send file/folder to detection engine (your friend's pipeline handles both!)
+            batch_results = self.detector.analyze_batch_emails(source_path)
             
             # Check if there was an error
             if 'error' in batch_results:
@@ -379,33 +479,49 @@ This email was sent to protect your account security."""
                 self.batch_results_text.insert(tk.END, f"Error: {batch_results['error']}\n")
                 return
             
+            # Format batch results for display
+            formatted_results = {'results': [], 'summary': None}
+            
+            # Format each individual result
+            for result in batch_results['results']:
+                email_record = result['email_record']
+                total_score = result['total_score']
+                rule_hits = result['rule_hits']
+                email_number = result['email_number']
+                
+                formatted_result = self.results_display.format_batch_analysis_results(
+                    email_record, total_score, rule_hits, self.detector.config, email_number
+                )
+                formatted_results['results'].append(formatted_result)
+            
+            # Use the existing summary
+            formatted_results['summary'] = batch_results['summary']
+            
             # Store results for saving
-            self.current_batch_results = batch_results
+            self.current_batch_results = formatted_results
             
             # Display formatted results
-            self.results_display.display_batch_results(batch_results)
+            self.results_display.display_batch_results(formatted_results)
             
         except Exception as e:
             # Handle any unexpected errors
             self.batch_results_text.delete(1.0, tk.END)
-            self.batch_results_text.insert(tk.END, {str(e)}\n)
-            messagebox.showerror("Analysis Error", {str(e)})
+            self.batch_results_text.insert(tk.END, "{str(e)}\n")
+            messagebox.showerror("Analysis Error", "{str(e)}")
     
     
     def save_batch_results(self):
-        """Export batch analysis results to a text file"""
         # Check if there are results to save
         if not self.current_batch_results:
             messagebox.showwarning("No Data", "Please analyze a batch of emails first")
             return
         
-        # Show file save dialog
+        # Show file save popup
         output_file = filedialog.asksaveasfilename(
             title="Save Batch Analysis Results",
             defaultextension=".txt",               # Default to .txt extension
             filetypes=[
                 ("Text files", "*.txt"),           # Primary option
-                ("All files", "*.*")               # Allow other formats
             ]
         )
         
@@ -425,11 +541,10 @@ This email was sent to protect your account security."""
                 
             except Exception as e:
                 # Show error if file saving fails
-                messagebox.showerror("Save Error", f"Error saving results: {str(e)}")
+                messagebox.showerror("Save Error", "{str(e)}")
     
     def clear_batch(self):
-        """Reset the batch analysis area"""
-        # Clear the file selection
+        # Clear the file selection field
         self.file_path_var.set("")
         
         # Clear the results display area
@@ -442,12 +557,8 @@ This email was sent to protect your account security."""
     
 
 
-# ====================================
-# APPLICATION STARTUP
-# ====================================
-
+# Application Startup
 def main():
-    """Main function to start the PhishGuard GUI application"""
     try:
         # Create the main tkinter window
         root = tk.Tk()
@@ -459,20 +570,13 @@ def main():
         root.mainloop()
         
     except Exception as e:
-        # Handle any startup errors gracefully
+        
         try:
-            # Show error dialog to user
-            messagebox.showerror("Startup Error", 
-                               f"PhishGuard failed to start:\n\n{str(e)}\n\n"
-                               f"Please check that all required files are present.")
+            # Show error message
+            messagebox.showerror("Startup Error", f"\n\n{str(e)}\n\n")
         except:
-            # If even the error dialog fails, just exit silently
             pass
 
 
-# ====================================
-# PROGRAM ENTRY POINT
-# ====================================
 if __name__ == "__main__":
-    # Only run main() if this file is executed directly (not imported)
     main()
