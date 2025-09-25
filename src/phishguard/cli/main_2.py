@@ -16,6 +16,7 @@ from phishguard.normalize.parse_mime import *
 from phishguard.features.extractors import *
 from phishguard.schema import EmailRecord
 from phishguard.scoring import *
+from phishguard.reporting.writers import *
 
 # def load_config_json(path: str | None) -> Dict:
 #     if not path:
@@ -75,23 +76,23 @@ def main():
         results = evaluate_email_file(args.eml, RULES, CFG)
         file_id, score, label, hits = results[0]
 
-        print(results)
-         #payload = result_to_json(Path(file_id).name, score, label, hits)
-        # if args.out_json:
-        #     write_json_file(args.out_json, payload)
-        # else:
-        #     print(json.dumps(payload, ensure_ascii=False, indent=2))
-        # return
+        # print(results)
+        payload = result_to_json(Path(file_id).name, score, label, hits)
+        if args.out_json:
+            write_json_results(payload, args.out_json)
+        else:
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return
 
     if args.record_json:
         with open(args.record_json, "r", encoding="utf-8") as f:
             data = json.load(f)
         rec = EmailRecord(**data)
     
-        score, label, hits = evaluate_email(rec, RULES, CFG)
+        score, label, hits = evaluate_email_file(rec, RULES, CFG)
         payload = result_to_json(Path(args.record_json).name, score, label, hits)
         if args.out_json:
-            write_json_file(args.out_json, payload)
+            write_json_results(payload, args.out_json)
         else:
             print(json.dumps(payload, ensure_ascii=False, indent=2))
         return
