@@ -15,30 +15,27 @@ from pathlib import Path
 # PhishGuard components
 from phishguard.schema import EmailRecord, RuleHit
 from phishguard.pipeline.evaluate import build_email_record, evaluate_email_file
-from phishguard.scoring.aggregate import evaluate_email
+from phishguard.scoring.aggregate import evaluate_email as score_email
 from phishguard.config import load_config
 from phishguard.rules import RULES
 from phishguard.ingestion.loaders import iterate_emails
 from email.message import EmailMessage
 
-# Storage system for saving analysis results
-try:
-    from phishguard.storage.storage import create_report_manager
-    STORAGE_AVAILABLE = True
-except ImportError:
-    STORAGE_AVAILABLE = False
+# Storage system for saving analysis results (disabled for now)
+STORAGE_AVAILABLE = False
+create_report_manager = None
 
 #====================================
-#    Simplified Phishing Detector    =
+#    Phishing Detector Engine    =
 #====================================
 class PhishingDetector:
     
     def __init__(self, config_path: Optional[str] = None):
         # Load detection rules and configuration
-        self.config = load_config(config_path)
+        self.config = load_config(config_path) if config_path else load_config()
         
         # Optional report manager for saving results
-        if STORAGE_AVAILABLE:
+        if STORAGE_AVAILABLE and create_report_manager:
             try:
                 self.report_manager = create_report_manager()
             except Exception:
@@ -75,7 +72,7 @@ class PhishingDetector:
         email_record = build_email_record(email_msg)
         
         # Use pipeline to evaluate email
-        rule_hits, total_score, classification = evaluate_email(email_record, RULES, self.config)
+        rule_hits, total_score, classification = score_email(email_record, RULES, self.config)
         
         # Save results if storage is available
         self._save_analysis_results(sender, subject, body, classification)
@@ -103,7 +100,7 @@ class PhishingDetector:
                     email_record = build_email_record(email_msg)
                     
                     # Use pipeline to evaluate email
-                    rule_hits, total_score, classification = evaluate_email(email_record, RULES, self.config)
+                    rule_hits, total_score, classification = score_email(email_record, RULES, self.config)
                     
                     # Store results
                     email_count += 1

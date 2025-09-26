@@ -22,11 +22,11 @@ class ResultsDisplayManager:
         widgets = [self.results_text, self.batch_results_text]
         
         for widget in widgets:
-            widget.tag_configure("safe", foreground="green", font=('Arial', 12, 'bold'))
-            widget.tag_configure("suspicious", foreground="orange", font=('Arial', 12, 'bold'))
-            widget.tag_configure("phishing", foreground="red", font=('Arial', 12, 'bold'))
-            widget.tag_configure("header", foreground="white", font=('Arial', 12, 'bold'))
-            widget.tag_configure("subheader", foreground="purple", font=('Arial', 12, 'bold'))
+            widget.tag_configure("safe", foreground="green", font=('Arial', 10, 'bold'))
+            widget.tag_configure("suspicious", foreground="orange", font=('Arial', 10, 'bold'))
+            widget.tag_configure("phishing", foreground="red", font=('Arial', 10, 'bold'))
+            widget.tag_configure("header", foreground="black", font=('Arial', 12, 'bold'))
+            widget.tag_configure("subheader", foreground="black", font=('Arial', 10, 'bold'))
 
 # ====================================================================
 #                    UI Entry Points (Setup UI to be displayed)      =
@@ -105,19 +105,19 @@ class ResultsDisplayManager:
     # INDIVIDUAL EMAIL CONTENT RENDERERS    
     def _show_report_header(self):
         # main report title
-        self.results_text.insert(tk.END, "EMAIL SECURITY ANALYSIS REPORT\n", "header")
-        self.results_text.insert(tk.END, "=" * 70 + "\n\n")
+        self.results_text.insert(tk.END, "EMAIL ANALYSIS REPORT\n", "header")
+        self.results_text.insert(tk.END, "=" * 50 + "\n\n")
     
     def _show_email_details(self, email_record: EmailRecord):
         # Render basic email information
-        self.results_text.insert(tk.END, "Analyzed Email:\n", "subheader")
+        self.results_text.insert(tk.END, "Email Details:\n", "subheader")
         self.results_text.insert(tk.END, f"   From: {email_record.from_addr}\n")
         self.results_text.insert(tk.END, f"   Subject: {email_record.subject}\n")
         self.results_text.insert(tk.END, f"   Body Length: {len(email_record.body_text or '')} characters\n\n")
     
     def _show_security_verdict(self, classification: str, score: float):
         # main security classification
-        self.results_text.insert(tk.END, "SECURITY VERDICT:\n", "subheader")
+        self.results_text.insert(tk.END, "Security Assessment:\n", "subheader")
         self.results_text.insert(tk.END, "   Classification: ")
         
         # Color-coded classification
@@ -131,60 +131,60 @@ class ResultsDisplayManager:
             self.results_text.insert(tk.END, f"{classification}\n", "phishing")
             explanation = "This email shows strong indicators of being a phishing attempt."
         
-        self.results_text.insert(tk.END, f"   Risk Score: {score}/50\n")
+        self.results_text.insert(tk.END, f"   Risk Score: {score:.1f}\n")
         self.results_text.insert(tk.END, f"   Assessment: {explanation}\n\n")
     
     def _show_detailed_analysis(self, rule_hits: List[RuleHit]):
         # detailed breakdown of all security checks
-        self.results_text.insert(tk.END, "DETAILED SECURITY ANALYSIS:\n", "subheader")
-        self.results_text.insert(tk.END, "-" * 50 + "\n\n")
+        self.results_text.insert(tk.END, "Detailed Analysis:\n", "subheader")
+        self.results_text.insert(tk.END, "-" * 30 + "\n\n")
         
         # Group rule hits by type
         failed_rules = [hit for hit in rule_hits if not hit.passed]
         passed_rules = [hit for hit in rule_hits if hit.passed]
         
         if failed_rules:
-            self.results_text.insert(tk.END, "⚠️  SECURITY CONCERNS DETECTED:\n")
+            self.results_text.insert(tk.END, "SECURITY CONCERNS DETECTED:\n")
             for rule in failed_rules:
-                self.results_text.insert(tk.END, f"   • {rule.rule_name.replace('_', ' ').title()}: {rule.details.get('reason', 'Security issue detected')}\n")
+                self.results_text.insert(tk.END, f"   - {rule.rule_name.replace('_', ' ').title()}: {rule.details.get('reason', 'Security issue detected')}\n")
                 self.results_text.insert(tk.END, f"     Risk Points: {rule.score_delta}\n")
             self.results_text.insert(tk.END, "\n")
         
         if passed_rules:
-            self.results_text.insert(tk.END, "✅ SECURITY CHECKS PASSED:\n")
+            self.results_text.insert(tk.END, "SECURITY CHECKS PASSED:\n")
             for rule in passed_rules:
-                self.results_text.insert(tk.END, f"   • {rule.rule_name.replace('_', ' ').title()}: {rule.details.get('reason', 'No issues detected')}\n")
+                self.results_text.insert(tk.END, f"   - {rule.rule_name.replace('_', ' ').title()}: {rule.details.get('reason', 'No issues detected')}\n")
             self.results_text.insert(tk.END, "\n")
     
     def _show_security_recommendations(self, classification: str):
         # Actionable security advice
-        self.results_text.insert(tk.END, "SECURITY RECOMMENDATIONS:\n", "subheader")
-        self.results_text.insert(tk.END, "-" * 40 + "\n")
+        self.results_text.insert(tk.END, "Recommendations:\n", "subheader")
+        self.results_text.insert(tk.END, "-" * 20 + "\n")
         
         if classification == "SAFE":
             self.results_text.insert(tk.END, "SAFE: This email appears safe to interact with.\n", "safe")
-            self.results_text.insert(tk.END, "   • You can safely read and respond to this email\n")
+            self.results_text.insert(tk.END, "   - You can safely read and respond to this email\n")
         elif classification == "SUSPICIOUS":
             self.results_text.insert(tk.END, "CAUTION: Exercise caution with this email:\n", "suspicious")
-            self.results_text.insert(tk.END, "   • Verify sender identity through alternative means\n")
-            self.results_text.insert(tk.END, "   • Avoid clicking any links until verified\n")
+            self.results_text.insert(tk.END, "   - Verify sender identity through alternative means\n")
+            self.results_text.insert(tk.END, "   - Avoid clicking any links until verified\n")
         else:  # PHISHING
             self.results_text.insert(tk.END, "SECURITY ALERT - Likely phishing attempt:\n", "phishing")
-            self.results_text.insert(tk.END, "   • DO NOT click any links in this email\n")
-            self.results_text.insert(tk.END, "   • DO NOT provide any personal information\n")
-            self.results_text.insert(tk.END, "   • Report this email to your IT security team\n")
+            self.results_text.insert(tk.END, "   - DO NOT click any links in this email\n")
+            self.results_text.insert(tk.END, "   - DO NOT provide any personal information\n")
+            self.results_text.insert(tk.END, "   - Report this email to your IT security team\n")
 
     # BATCH EMAIL CONTENT RENDERERS
     def _show_batch_header(self):
         # batch analysis title
-        self.batch_results_text.insert(tk.END, "BATCH EMAIL ANALYSIS REPORT\n", "header")
-        self.batch_results_text.insert(tk.END, "=" * 70 + "\n\n")
+        self.batch_results_text.insert(tk.END, "BATCH ANALYSIS REPORT\n", "header")
+        self.batch_results_text.insert(tk.END, "=" * 40 + "\n\n")
 
     def _show_executive_summary(self, summary):
         # high-level batch statistics
-        self.batch_results_text.insert(tk.END, "EXECUTIVE SUMMARY\n", "subheader")
-        self.batch_results_text.insert(tk.END, "-" * 30 + "\n")
-        self.batch_results_text.insert(tk.END, f"Total Emails Analyzed: {summary['total_emails']}\n")
+        self.batch_results_text.insert(tk.END, "Summary\n", "subheader")
+        self.batch_results_text.insert(tk.END, "-" * 15 + "\n")
+        self.batch_results_text.insert(tk.END, f"Total Emails: {summary['total_emails']}\n")
         
         # Color-coded statistics
         self.batch_results_text.insert(tk.END, f"Safe Emails: {summary['safe_count']} ({summary['safe_percentage']:.1f}%)\n", "safe")
@@ -204,8 +204,8 @@ class ResultsDisplayManager:
 
     def _show_individual_email_analysis(self, results):
         # summary of individual email results
-        self.batch_results_text.insert(tk.END, "\nINDIVIDUAL EMAIL ANALYSIS\n", "subheader")
-        self.batch_results_text.insert(tk.END, "-" * 40 + "\n")
+        self.batch_results_text.insert(tk.END, "\nIndividual Results\n", "subheader")
+        self.batch_results_text.insert(tk.END, "-" * 20 + "\n")
         
         for result in results:
             classification = result['classification']
@@ -213,7 +213,7 @@ class ResultsDisplayManager:
             
             self.batch_results_text.insert(tk.END, f"\nEmail #{result['email_number']}: ")
             self.batch_results_text.insert(tk.END, f"{classification}", color)
-            self.batch_results_text.insert(tk.END, f" (Risk Score: {result['final_score']}/50)\n")
+            self.batch_results_text.insert(tk.END, f" (Score: {result['final_score']:.1f})\n")
             
             self.batch_results_text.insert(tk.END, f"  From: {result['email_data']['sender']}\n")
             subject = result['email_data']['subject']
@@ -221,18 +221,18 @@ class ResultsDisplayManager:
 
     def _show_batch_recommendations(self, summary):
         # actionable batch recommendations
-        self.batch_results_text.insert(tk.END, f"\nRECOMMENDATIONS\n", "subheader")
-        self.batch_results_text.insert(tk.END, "-" * 25 + "\n")
+        self.batch_results_text.insert(tk.END, f"\nRecommendations\n", "subheader")
+        self.batch_results_text.insert(tk.END, "-" * 15 + "\n")
         
         if summary['phishing_count'] > 0:
-            self.batch_results_text.insert(tk.END, "IMMEDIATE ACTIONS:\n", "phishing")
-            self.batch_results_text.insert(tk.END, "   • Review all PHISHING emails immediately\n")
-            self.batch_results_text.insert(tk.END, "   • Implement additional security measures\n")
+            self.batch_results_text.insert(tk.END, "Immediate Actions:\n", "phishing")
+            self.batch_results_text.insert(tk.END, "   - Review all phishing emails immediately\n")
+            self.batch_results_text.insert(tk.END, "   - Implement additional security measures\n")
         
         if summary['suspicious_count'] > 0:
-            self.batch_results_text.insert(tk.END, "CAUTIONARY MEASURES:\n", "suspicious")
-            self.batch_results_text.insert(tk.END, "   • Review suspicious emails with security team\n")
+            self.batch_results_text.insert(tk.END, "Cautionary Measures:\n", "suspicious")
+            self.batch_results_text.insert(tk.END, "   - Review suspicious emails with security team\n")
         
-        self.batch_results_text.insert(tk.END, "ONGOING SECURITY:\n")
-        self.batch_results_text.insert(tk.END, "   • Conduct regular security awareness training\n")
-        self.batch_results_text.insert(tk.END, "   • Implement email filtering and monitoring\n")
+        self.batch_results_text.insert(tk.END, "Ongoing Security:\n")
+        self.batch_results_text.insert(tk.END, "   - Conduct regular security awareness training\n")
+        self.batch_results_text.insert(tk.END, "   - Implement email filtering and monitoring\n")

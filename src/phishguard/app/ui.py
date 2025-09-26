@@ -60,14 +60,14 @@ class PhishingDetectorGUI:
         
         #main frame
         main_frame = ttk.Frame(self.root, padding="15")
-        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        main_frame.grid(row=0, column=0, sticky="nsew")
         
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         main_frame.columnconfigure(0, weight=1)
         
         header_frame = ttk.Frame(main_frame)
-        header_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
+        header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 20))
         header_frame.columnconfigure(1, weight=1)
         
         #logo
@@ -95,8 +95,8 @@ class PhishingDetectorGUI:
             logo_label.grid(row=0, column=0, rowspan=2, sticky=tk.W, padx=(0, 15))
             
         except Exception:
-            # Fallback: show shield emoji if image fails
-            logo_label = ttk.Label(header_frame, text="🛡️", font=('Arial', 20, 'bold'))
+            # Fallback: show text if image fails
+            logo_label = ttk.Label(header_frame, text="PhishGuard", font=('Arial', 12, 'bold'))
             logo_label.grid(row=0, column=0, rowspan=2, sticky=tk.W, padx=(0, 15))
         
         #title/header
@@ -110,7 +110,7 @@ class PhishingDetectorGUI:
         #====================================  
         # Create tabbed interface (notebook widget)
         notebook = ttk.Notebook(main_frame)
-        notebook.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
+        notebook.grid(row=1, column=0, sticky="nsew", pady=(0, 10))
         main_frame.rowconfigure(1, weight=1)
         
         # Create frames 
@@ -134,24 +134,24 @@ class PhishingDetectorGUI:
         #====================================  
         # labeled frame for email input
         input_frame = ttk.LabelFrame(self.individual_frame, text="Email Details", padding="15")
-        input_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 15))
+        input_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 15))
         input_frame.columnconfigure(1, weight=1)  # Make input fields expandable
         
         # Sender Email section
-        ttk.Label(input_frame, text="Sender Email:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=5)
+        ttk.Label(input_frame, text="Sender Email:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky="w", pady=5)
         self.sender_entry = ttk.Entry(input_frame, width=60, font=('Arial', 10))  # Text input for sender
-        self.sender_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=5)
+        self.sender_entry.grid(row=0, column=1, sticky="ew", padx=(10, 0), pady=5)
         
         # Subject Line section
-        ttk.Label(input_frame, text="Subject:", font=('Arial', 10, 'bold')).grid(row=1, column=0, sticky=tk.W, pady=5)
+        ttk.Label(input_frame, text="Subject:", font=('Arial', 10, 'bold')).grid(row=1, column=0, sticky="w", pady=5)
         self.subject_entry = ttk.Entry(input_frame, width=60, font=('Arial', 10))  # Text input for subject
-        self.subject_entry.grid(row=1, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=5)
+        self.subject_entry.grid(row=1, column=1, sticky="ew", padx=(10, 0), pady=5)
         
         # Email Body Input Section
-        ttk.Label(input_frame, text="Email Body:", font=('Arial', 10, 'bold')).grid(row=2, column=0, sticky=(tk.W, tk.N), pady=5)
+        ttk.Label(input_frame, text="Email Body:", font=('Arial', 10, 'bold')).grid(row=2, column=0, sticky="nw", pady=5)
         self.body_text = scrolledtext.ScrolledText(input_frame, width=70, height=10,   # Large text area with scrollbar
                                                   wrap=tk.WORD, font=('Arial', 10))
-        self.body_text.grid(row=2, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=5)
+        self.body_text.grid(row=2, column=1, sticky="ew", padx=(10, 0), pady=5)
         
         # Button Section
         # ==============
@@ -178,14 +178,14 @@ class PhishingDetectorGUI:
         # ==============================
         # Large text area to show analysis results
         results_frame = ttk.LabelFrame(self.individual_frame, text="Analysis Results", padding="15")
-        results_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(15, 0))
+        results_frame.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=(15, 0))
         results_frame.columnconfigure(0, weight=1)  # Make results area expandable
         results_frame.rowconfigure(0, weight=1)     # Make results area expandable vertically
         
         # Scrollable text widget
         self.results_text = scrolledtext.ScrolledText(results_frame, width=90, height=20, 
                                                      wrap=tk.WORD, state=tk.DISABLED, font=('Arial', 10))
-        self.results_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        self.results_text.grid(row=0, column=0, sticky="nsew")
         
         # Resizing fix for results area
         self.individual_frame.rowconfigure(2, weight=1)
@@ -198,15 +198,15 @@ class PhishingDetectorGUI:
         # =============================
         # Frames for file/folder selection
         file_frame = ttk.LabelFrame(self.batch_frame, text="File or Folder Selection", padding="15")
-        file_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 15))
+        file_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 15))
         file_frame.columnconfigure(1, weight=1)  # Make file path field expandable
         
         # File/Folder Path Input and Browse Button
-        ttk.Label(file_frame, text="Email Source:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=5)
+        ttk.Label(file_frame, text="Email Source:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky="w", pady=5)
         self.file_path_var = tk.StringVar()  # Variable to store selected file/folder path
         self.file_path_entry = ttk.Entry(file_frame, textvariable=self.file_path_var,   # Display selected path
                                         width=60, state='readonly', font=('Arial', 10))  # Read-only (user can't type)
-        self.file_path_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(10, 10), pady=5)
+        self.file_path_entry.grid(row=0, column=1, sticky="ew", padx=(10, 10), pady=5)
         
         # Single Browse Button that handles both files and folders
         browse_btn = ttk.Button(file_frame, text="Browse", command=self.browse_source)
@@ -215,8 +215,8 @@ class PhishingDetectorGUI:
         # supported file formats for uploading
         instructions = ttk.Label(file_frame, 
                                 text="Click Browse to select:\n"
-                                     "• Email files (.txt, .mbox) - or -\n"
-                                     "• Folders containing email files\n"
+                                     "- Email files (.txt, .mbox) - or -\n"
+                                     "- Folders containing email files\n"
                                      "The system automatically detects and processes all valid emails",
                                 font=('Arial', 9), foreground='gray')
         instructions.grid(row=1, column=0, columnspan=3, sticky=tk.W, pady=(10, 0))
@@ -246,14 +246,14 @@ class PhishingDetectorGUI:
         # ====================================
         # batch analysis results
         batch_results_frame = ttk.LabelFrame(self.batch_frame, text="Batch Analysis Results", padding="15")
-        batch_results_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(15, 0))
+        batch_results_frame.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=(15, 0))
         batch_results_frame.columnconfigure(0, weight=1)  # Make results area expandable
         batch_results_frame.rowconfigure(0, weight=1)     # Make results area expandable vertically
         
         # Scrollable text widget
         self.batch_results_text = scrolledtext.ScrolledText(batch_results_frame, width=90, height=20, 
                                                            wrap=tk.WORD, state=tk.DISABLED, font=('Arial', 10))
-        self.batch_results_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        self.batch_results_text.grid(row=0, column=0, sticky="nsew")
         
         # Initialize results display manager
         self.results_display = ResultsDisplayManager(self.results_text, self.batch_results_text)
@@ -281,7 +281,7 @@ class PhishingDetectorGUI:
         self.root.update()
         
         try:
-            # Use simplified detector engine
+            # Use detector engine
             email_record, total_score, rule_hits = self.detector.analyze_email(sender, subject, body)
             
             # Display the results using simplified display
@@ -347,9 +347,9 @@ This email was sent to protect your account security."""
         choice = messagebox.askyesnocancel(
             "Select Source Type",
             "What would you like to select?\n\n"
-            "• Click 'Yes' to select an email file (.txt, .mbox)\n"
-            "• Click 'No' to select a folder containing email files\n"
-            "• Click 'Cancel' to abort"
+            "- Click 'Yes' to select an email file (.txt, .mbox)\n"
+            "- Click 'No' to select a folder containing email files\n"
+            "- Click 'Cancel' to abort"
         )
         
         if choice is True:
@@ -433,7 +433,7 @@ This email was sent to protect your account security."""
         self.batch_results_text.delete(1.0, tk.END)        # Clear previous results
         
         # Show processing message
-        self.batch_results_text.insert(tk.END, f"🔍 {status_msg}\n")
+        self.batch_results_text.insert(tk.END, f"{status_msg}\n")
         if source_type == "folder":
             self.batch_results_text.insert(tk.END, "Scanning folder and processing all email files...\n\n")
         else:
@@ -543,7 +543,7 @@ def main():
         
         try:
             # Show error message
-            messagebox.showerror("Startup Error", f"\n\n{str(e)}\n\n")
+            messagebox.showerror("Startup Error", f"{str(e)}")
         except:
             pass
 
