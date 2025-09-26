@@ -17,6 +17,7 @@ from phishguard.features.extractors import *
 from phishguard.schema import EmailRecord
 from phishguard.scoring import evaluate_email , aggregate
 from phishguard.reporting.writers import write_json_results, write_csv_results, write_results , write_csv, write_json
+from phishguard.storage.storage import get_records_by_threat_level, showThreatAmt,display_records
 
 # def load_config_json(path: str | None) -> Dict:
 #     if not path:
