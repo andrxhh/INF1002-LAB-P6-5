@@ -1,9 +1,10 @@
+#!/usr/bin/env python3
 import os
 import sys
-from typing import List, Dict, Tuple
+from typing import List, Tuple
 
 
-# src directory
+# Ensure we can import from the project src directory (phishguard/src)
 _TESTS_DIR = os.path.dirname(__file__)
 _PROJECT_ROOT = os.path.abspath(os.path.join(_TESTS_DIR, '..'))
 _SRC_DIR = os.path.join(_PROJECT_ROOT, 'src')
@@ -12,14 +13,21 @@ if _SRC_DIR not in sys.path:
 
 from phishguard.storage.storage import EmailReportManager
 from phishguard.schema.classes import EmailRecord, RuleHit, Severity
-def _make_manager(filename: str = "test_emailReport.csv") -> EmailReportManager:
 
+
+def _make_manager(filename: str = "test_emailReport.csv") -> EmailReportManager:
     return EmailReportManager(filename)
 
 
 def _example_records() -> List[Tuple[EmailRecord, List[RuleHit]]]:
     examples: List[Tuple[EmailRecord, List[RuleHit]]] = []
-    def mk_email(from_addr: str, subject: str, body_text: str, body_html: str = '') -> EmailRecord:
+
+    def mk_email(
+        from_addr: str,
+        subject: str,
+        body_text: str,
+        body_html: str = '',
+    ) -> EmailRecord:
         return EmailRecord(
             from_display='',
             from_addr=from_addr,
@@ -35,6 +43,7 @@ def _example_records() -> List[Tuple[EmailRecord, List[RuleHit]]]:
             dkim_pass=None,
             dmarc_pass=None,
         )
+
     examples.append((
         mk_email(
             'phishing@fake-bank.com',
@@ -44,6 +53,7 @@ def _example_records() -> List[Tuple[EmailRecord, List[RuleHit]]]:
         ),
         [RuleHit('keywords', passed=False, score_delta=50.0, severity=Severity.CRITICAL, details={'kw': 'URGENT'})]
     ))
+
     examples.append((
         mk_email(
             'support@suspicious-site.org',
@@ -53,6 +63,7 @@ def _example_records() -> List[Tuple[EmailRecord, List[RuleHit]]]:
         ),
         [RuleHit('pii_request', passed=False, score_delta=30.0, severity=Severity.HIGH, details={})]
     ))
+
     examples.append((
         mk_email(
             'admin@questionable-service.net',
@@ -62,6 +73,7 @@ def _example_records() -> List[Tuple[EmailRecord, List[RuleHit]]]:
         ),
         [RuleHit('urgency', passed=False, score_delta=15.0, severity=Severity.MEDIUM, details={})]
     ))
+
     examples.append((
         mk_email(
             'newsletter@tech-news.com',
@@ -71,6 +83,7 @@ def _example_records() -> List[Tuple[EmailRecord, List[RuleHit]]]:
         ),
         []
     ))
+
     examples.append((
         mk_email(
             'noreply@legitimate-bank.com',
@@ -80,6 +93,7 @@ def _example_records() -> List[Tuple[EmailRecord, List[RuleHit]]]:
         ),
         []
     ))
+
     return examples
 
 
@@ -114,5 +128,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"ERROR: {e}")
         sys.exit(1)
-
 
