@@ -10,13 +10,13 @@ import sys
 from phishguard.config import load_config
 from phishguard.rules import *
 from phishguard.pipeline.evaluate import *
-from phishguard.reporting import *
-from phishguard.ingestion.loaders import *
+from phishguard.reporting import evaluate_email_file
+from phishguard.ingestion.loaders import load_email_file
 from phishguard.normalize.parse_mime import *
 from phishguard.features.extractors import *
 from phishguard.schema import EmailRecord
-from phishguard.scoring import *
-from phishguard.reporting.writers import *
+from phishguard.scoring import evaluate_email , aggregate
+from phishguard.reporting.writers import write_json_results, write_csv_results, write_results , write_csv, write_json
 
 # def load_config_json(path: str | None) -> Dict:
 #     if not path:
@@ -102,7 +102,7 @@ def main():
         header = ["id", "label", "score", "rule_name", "score_delta", "severity", "details_json"]
         rows = results_to_csv_rows(results)
         out = args.out_csv or "results.csv"
-        write_csv_file(out, header, rows)
+        write_csv_results(rows, Path(out))
         print(f"Wrote {out} with {len(rows)} rows.")
         return
     
