@@ -45,7 +45,7 @@ def evaluate_email_file(source: Path, rules: Iterable[RuleFunction], config: Dic
     results: List[Tuple[str, float, str, list[RuleHit]]] = []
     for origin, msg in iterate_emails(source):
         rec = build_email_record(msg)
-        total_score, label, hits = evaluate_email(rec, rules, config)
+        hits, total_score, label = evaluate_email(rec, rules, config)
         results.append((str(origin), total_score, label, hits))
     return results
 
@@ -54,7 +54,7 @@ def evaluate_email_file_dict(source: Path, rules: Iterable[RuleFunction], config
     results: List[Dict]=[]
     for origin, message in iterate_emails(source):
         rec= build_email_record(message)
-        total_score, label, hits = evaluate_email(rec,rules,config)
+        hits, total_score, label = evaluate_email(rec,rules,config)
 
         result = {
             "file_path": str(origin),

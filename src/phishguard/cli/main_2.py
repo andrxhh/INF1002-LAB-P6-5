@@ -10,14 +10,13 @@ import sys
 from phishguard.config import load_config
 from phishguard.rules import *
 from phishguard.pipeline.evaluate import *
-from phishguard.reporting import evaluate_email_file
-from phishguard.ingestion.loaders import load_email_file
+from phishguard.pipeline.evaluate import evaluate_email_file
 from phishguard.normalize.parse_mime import *
 from phishguard.features.extractors import *
 from phishguard.schema import EmailRecord
 from phishguard.scoring import evaluate_email , aggregate
 from phishguard.reporting.writers import write_json_results, write_csv_results
-from phishguard.storage.storage import EmailRecordManager
+from phishguard.storage.storage import *
 
 
 # def load_config_json(path: str | None) -> Dict:
@@ -65,6 +64,8 @@ def main():
 
     ap.add_argument("--out-json", help="Write a JSON result file (single input) to this path")
     ap.add_argument("--out-csv", help="Write a CSV file (batch) to this path")
+    ap.add_argument("--storage", help="Save results using EmailReportManager with timestamped files")
+    ap.add_argument("--storage-dir", help="Directory for storage output (default: ./outPutResult)")
     ap.add_argument("--gui", help ="# Launch graphical interface")
     args = ap.parse_args()
 
@@ -93,7 +94,12 @@ def main():
             ],
         }
 
-        if args.out_json:
+        if args.storage:
+            # Use EmailReportManager for storage
+            storage_dir = args.storage_dir or "./outPutResult"
+            manager = EmailReportManager(base_name=args.storage, output_dir=storage_dir)
+            manager.save([payload])
+        elif args.out_json:
             write_json_results(payload, args.out_json)
         else:
             print(json.dumps(payload, ensure_ascii=False, indent=2))
@@ -106,7 +112,13 @@ def main():
         rec = EmailRecord(**data)
 
         results = evaluate_email_file_dict(args.record_json, RULES, CFG)
-        if args.out_json:
+        
+        if args.storage:
+            # Use EmailReportManager for storage
+            storage_dir = args.storage_dir or "./outPutResult"
+            manager = EmailReportManager(base_name=args.storage, output_dir=storage_dir)
+            manager.save(results)
+        elif args.out_json:
             write_json_results(results, args.out_json)
         else:
             print(json.dumps(results, ensure_ascii=False, indent=2))
@@ -115,9 +127,16 @@ def main():
     # Folder → batch evaluation
     if args.folder:
         results = evaluate_email_file_dict(args.folder, RULES, CFG)
-        out = args.out_csv or "results.csv"
-        write_csv_results(results, Path(out))
-        print(f"Wrote {out} with {len(results)} rows.")
+        
+        if args.storage:
+            # Use EmailReportManager for storage
+            storage_dir = args.storage_dir or "./outPutResult"
+            manager = EmailReportManager(base_name=args.storage, output_dir=storage_dir)
+            manager.save(results)
+        else:
+            out = args.out_csv or "results.csv"
+            write_csv_results(results, Path(out))
+            print(f"Wrote {out} with {len(results)} rows.")
         return
     
     if args.gui:
