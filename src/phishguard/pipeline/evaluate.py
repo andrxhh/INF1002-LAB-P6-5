@@ -48,3 +48,30 @@ def evaluate_email_file(source: Path, rules: Iterable[RuleFunction], config: Dic
         total_score, label, hits = evaluate_email(rec, rules, config)
         results.append((str(origin), total_score, label, hits))
     return results
+
+#added a new function
+def evaluate_email_file_dict(source: Path, rules: Iterable[RuleFunction], config: Dict) -> List[Dict]:
+    results: List[Dict]=[]
+    for origin, message in iterate_emails(source):
+        rec= build_email_record(message)
+        total_score, label, hits = evaluate_email(rec,rules,config)
+
+        result = {
+            "file_path": str(origin),
+            "from_addr": rec.from_addr,
+            "subject": rec.subject,
+            "classification": label,
+            "total_score": total_score,
+            "rule_hits": [
+                {
+                    "rule_name": h.rule_name,
+                    "passed": h.passed,
+                    "score_delta": h.score_delta,
+                    "severity": getattr(h.severity, "name", str(h.severity)),
+                    "details": h.details,
+                }
+                for h in hits
+            ],
+        }
+        results.append(result)
+    return results

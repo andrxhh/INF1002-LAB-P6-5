@@ -120,9 +120,9 @@ def write_csv_results(results: List[Dict[str, Any]], output_file: Path) -> bool:
     except Exception as e:
         print(f"Error writing CSV results: {e}")
         return False
+    
 
-
-# Backward compatibility functions
+    # Backward compatibility functions
 def write_json(results: List[Dict], filepath: str):
     """Legacy function for writing JSON files"""
     try:
