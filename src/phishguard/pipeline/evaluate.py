@@ -49,7 +49,7 @@ def evaluate_email_file(source: Path, rules: Iterable[RuleFunction], config: Dic
         results.append((str(origin), total_score, label, hits))
     return results
 
-#added a new function
+#added a new functionS
 def evaluate_email_file_dict(source: Path, rules: Iterable[RuleFunction], config: Dict) -> List[Dict]:
     results: List[Dict]=[]
     for origin, message in iterate_emails(source):

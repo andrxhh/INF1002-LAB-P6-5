@@ -16,8 +16,9 @@ from phishguard.normalize.parse_mime import *
 from phishguard.features.extractors import *
 from phishguard.schema import EmailRecord
 from phishguard.scoring import evaluate_email , aggregate
-from phishguard.reporting.writers import write_json_results, write_csv_results, write_results , write_csv, write_json
-from phishguard.storage.storage import get_records_by_threat_level, showThreatAmt,display_records
+from phishguard.reporting.writers import write_json_results, write_csv_results
+from phishguard.storage.storage import EmailRecordManager
+
 
 # def load_config_json(path: str | None) -> Dict:
 #     if not path:
@@ -72,39 +73,51 @@ def main():
     
     CFG = load_config()
 
-    # Single raw/.eml or mbox or folder → unified evaluate_source
     if args.eml:
         results = evaluate_email_file(args.eml, RULES, CFG)
         file_id, score, label, hits = results[0]
 
-        # print(results)
-        payload = result_to_json(Path(file_id).name, score, label, hits)
+        payload = {
+            "file_path": str(file_id),
+            "classification": label,
+            "total_score": score,
+            "rule_hits": [
+                {
+                    "rule_name": h.rule_name,
+                    "passed": h.passed,
+                    "score_delta": h.score_delta,
+                    "severity": getattr(h.severity, "name", str(h.severity)),
+                    "details": h.details,
+                }
+                for h in hits
+            ],
+        }
+
         if args.out_json:
             write_json_results(payload, args.out_json)
         else:
             print(json.dumps(payload, ensure_ascii=False, indent=2))
         return
 
+    # Single EmailRecord JSON → evaluate
     if args.record_json:
         with open(args.record_json, "r", encoding="utf-8") as f:
             data = json.load(f)
         rec = EmailRecord(**data)
-    
-        score, label, hits = evaluate_email_file(rec, RULES, CFG)
-        payload = result_to_json(Path(args.record_json).name, score, label, hits)
+
+        results = evaluate_email_file_dict(args.record_json, RULES, CFG)
         if args.out_json:
-            write_json_results(payload, args.out_json)
+            write_json_results(results, args.out_json)
         else:
-            print(json.dumps(payload, ensure_ascii=False, indent=2))
+            print(json.dumps(results, ensure_ascii=False, indent=2))
         return
 
+    # Folder → batch evaluation
     if args.folder:
-        results = evaluate_source(args.folder, RULES, CFG)
-        header = ["id", "label", "score", "rule_name", "score_delta", "severity", "details_json"]
-        rows = results_to_csv_rows(results)
+        results = evaluate_email_file_dict(args.folder, RULES, CFG)
         out = args.out_csv or "results.csv"
-        write_csv_results(rows, Path(out))
-        print(f"Wrote {out} with {len(rows)} rows.")
+        write_csv_results(results, Path(out))
+        print(f"Wrote {out} with {len(results)} rows.")
         return
     
     if args.gui:
