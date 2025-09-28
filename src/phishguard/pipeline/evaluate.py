@@ -10,7 +10,15 @@ from phishguard.normalize.parse_mime import normalize_header, decode_address, ex
 from phishguard.features.extractors import extract_urls, extract_attachments
 from phishguard.scoring.aggregate import RuleFunction, evaluate_email
 
+#==========================================
+#         Email Record Construction       =
+#==========================================
+
 def build_email_record(msg: EmailMessage) -> EmailRecord:
+    """
+    Constructs an EmailRecord object from an EmailMessage.
+    Extracts and normalizes headers, addresses, body, URLs, and attachments.
+    """
     header = normalize_header(msg)
     from_display, from_addr, reply_to_addr = decode_address(msg)
     body_text, body_html = extract_body(msg)
@@ -36,11 +44,19 @@ def build_email_record(msg: EmailMessage) -> EmailRecord:
 
     return rec
 
-def evaluate_email_file(source: Path, rules: Iterable[RuleFunction], config: Dict) -> List[Tuple[str, float, str, list[RuleHit]]]:
+#==========================================
+#         Email Evaluation Pipeline       =
+#==========================================
+
+def evaluate_email_file(
+    source: Path,
+    rules: Iterable[RuleFunction],
+    config: Dict
+) -> List[Tuple[str, float, str, list[RuleHit]]]:
     """
-        Pipeline for evaluating a single email file or a directory of email files.
-        Build email records for each email, run the rules and classify them.
-        Returns a list of tuples[filename, score, classification, hits]
+    Pipeline for evaluating a single email file or a directory of email files.
+    Builds email records for each email, runs the rules, and classifies them.
+    Returns a list of tuples: [filename, score, classification, hits]
     """
     results: List[Tuple[str, float, str, list[RuleHit]]] = []
     for origin, msg in iterate_emails(source):
@@ -49,12 +65,23 @@ def evaluate_email_file(source: Path, rules: Iterable[RuleFunction], config: Dic
         results.append((str(origin), total_score, label, hits))
     return results
 
-#added a new functionS
-def evaluate_email_file_dict(source: Path, rules: Iterable[RuleFunction], config: Dict) -> List[Dict]:
-    results: List[Dict]=[]
+#==========================================
+#      Email Evaluation (Dict Output)     =
+#==========================================
+
+def evaluate_email_file_dict(
+    source: Path,
+    rules: Iterable[RuleFunction],
+    config: Dict
+) -> List[Dict]:
+    """
+    Similar to evaluate_email_file, but returns results as a list of dictionaries
+    with detailed information for each email, including rule hit details.
+    """
+    results: List[Dict] = []
     for origin, message in iterate_emails(source):
-        rec= build_email_record(message)
-        hits, total_score, label = evaluate_email(rec,rules,config)
+        rec = build_email_record(message)
+        hits, total_score, label = evaluate_email(rec, rules, config)
 
         result = {
             "file_path": str(origin),
