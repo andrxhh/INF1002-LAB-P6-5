@@ -2,6 +2,17 @@
 
 ## Overview
 
+Link: [text](https://github.com/andrxhh/phishguard.git)
+
+By: Lab 6-5
+
+AARON ALISON DSILVA (2500461)
+AFIQAH BINTE MOHAMED ADNAN (2503067)
+ANDREW CHIA KAI XUN BEDINA (2501298)
+CHESTON LEROY ONG (2502701)
+CHUA JIA JUN (2500533)
+
+
 **PhishGuard** is a transparent, rule-based email analyzer designed to classify messages as **Safe** or **Phishing**. The focus is on clean logic, explainability, and zero third-party dependencies—leveraging only the Python standard library.
 
 - **Python Version:** 3.10 or higher
