@@ -1,2 +1,2 @@
-from .main_2 import main
+from .main import main
 __all__ = ['main']

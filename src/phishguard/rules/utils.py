@@ -1,16 +1,23 @@
 from __future__ import annotations
 
 import re
-import unicodedata
-from typing import Dict, Iterable, Tuple
+from typing import Iterable
 
+#==========================================
+#           Regex Pattern Helpers         =
+#==========================================
 
 # Regex for IPv4 address validation
-_IPV4_RE   = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
+_IPV4_RE = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
+
+#==========================================
+#           Domain Utilities              =
+#==========================================
 
 def to_ascii_domain(domain: str) -> str:
     """
-        Convert a domain to its ASCII representation using IDNA encoding.
+    Convert a domain to its ASCII representation using IDNA encoding.
+    Handles internationalized domain names (IDN).
     """
     if not domain: 
         return ""
@@ -21,19 +28,29 @@ def to_ascii_domain(domain: str) -> str:
         pass
     return d
 
+#==========================================
+#           Email Utilities               =
+#==========================================
+
 def parse_email_domain(addr: str) -> str:
     """
-        Extract the domain from an email address. Return an empty string if invalid.
+    Extract the domain from an email address.
+    Returns an empty string if the address is invalid.
     """
     if not addr or "@" not in addr:
         return ""
     return to_ascii_domain(addr.split("@", 1)[1])
 
+#==========================================
+#           URL Utilities                 =
+#==========================================
+
 def parse_url_host(url: str) -> str:
     """
-        Host parser for HTTP(S) URLs.
-        Accepts 'http://', 'https://' and 'www.'.
-        Strips userInfo and port when applicable.
+    Extract the host from an HTTP(S) URL.
+    Accepts 'http://', 'https://', and 'www.' prefixes.
+    Strips user info and port if present.
+    Returns the ASCII domain.
     """
     if not url:
         return ""
@@ -48,40 +65,53 @@ def parse_url_host(url: str) -> str:
         host = strip_url[8:].split("/", 1)[0]
     elif strip_url.startswith('http://'):
         host = strip_url[7:].split("/", 1)[0]
-    
-    # Strip userInfo
+    else:
+        host = strip_url
+
+    # Strip user info if present
     if "@" in host:
         host = host.split("@", 1)[1]
-    
-    # Strip port
+
+    # Strip port if present
     if ":" in host:
         host = host.split(":", 1)[0]
     return to_ascii_domain(host)
 
+#==========================================
+#           IP Address Utilities          =
+#==========================================
+
 def is_ipv4_host(host: str) -> bool:
     """
-        Check if host is a IPv4 address.
+    Check if the given host is a valid IPv4 address.
     """
     if not host:
         return False
     return bool(_IPV4_RE.match(host))
 
+#==========================================
+#           Registrable Domain Helpers    =
+#==========================================
+
 def registrable_domain(domain: str, effective_tld: Iterable[str]) -> str:
     """
-        Effective Top Level Domain, take last two labels by default; If domain end with 
-        an exception of ('co.uk', 'com.sg' etc), take last three labels.
+    Get the registrable domain (e.g., example.com, example.co.uk).
+    Uses the effective TLD list to handle multi-label TLDs (like 'co.uk').
+    Returns an empty string if the domain is invalid.
     """
     d = to_ascii_domain(domain)
     if not d or "." not in d:
         return ""
     parts = d.split(".")
     etld = {e.lower().lstrip(".") for e in (effective_tld or [])}
+    # Check for multi-label TLDs (e.g., 'co.uk', 'com.sg')
     if len(parts) >= 3 and ".".join(parts[-2:]) in etld or len(parts) >= 3 and ".".join(parts[-3:]) in etld:
         return ".".join(parts[-3:])
     return ".".join(parts[-2:])
 
 def same_registrable(domain1: str, domain2: str, effective_tld: Iterable[str]) -> bool:
     """
-        Check if two domains have the same registrable domain.
+    Check if two domains share the same registrable domain.
+    Useful for phishing detection and domain comparison.
     """
     return registrable_domain(domain1, effective_tld) == registrable_domain(domain2, effective_tld)

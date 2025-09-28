@@ -1,3 +1,2 @@
-# Storage module placeholder
-# TODO: Implement storage persistence functions
-__all__ = []
+from .storage import EmailReportManager
+__all__ = ["EmailReportManager"]

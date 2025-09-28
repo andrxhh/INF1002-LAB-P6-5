@@ -11,23 +11,26 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any
 
+#==========================================
+#           Main Results Writer           =
+#==========================================
 
 def write_results(results: List[Dict[str, Any]], output_path: str, format: str = 'auto') -> bool:
     """
-    Write analysis results to file
-    
+    Write analysis results to file in the specified format (JSON or CSV).
+
     Args:
         results: List of analysis result dictionaries
         output_path: Path to output file
         format: Output format ('json', 'csv', or 'auto' to detect from extension)
-        
+
     Returns:
         True if successful, False otherwise
     """
     try:
         output_file = Path(output_path)
         
-        # Auto-detect format from extension
+        # Auto-detect format from extension if needed
         if format == 'auto':
             suffix = output_file.suffix.lower()
             if suffix == '.json':
@@ -51,9 +54,21 @@ def write_results(results: List[Dict[str, Any]], output_path: str, format: str =
         print(f"Error writing results: {e}")
         return False
 
+#==========================================
+#               JSON Writer               =
+#==========================================
 
 def write_json_results(results: List[Dict[str, Any]], output_file: Path) -> bool:
-    """Write results in JSON format"""
+    """
+    Write results in JSON format with metadata.
+
+    Args:
+        results: List of analysis result dictionaries
+        output_file: Path object for output file
+
+    Returns:
+        True if successful, False otherwise
+    """
     try:
         output_data = {
             'metadata': {
@@ -73,9 +88,21 @@ def write_json_results(results: List[Dict[str, Any]], output_file: Path) -> bool
         print(f"Error writing JSON results: {e}")
         return False
 
+#==========================================
+#               CSV Writer                =
+#==========================================
 
 def write_csv_results(results: List[Dict[str, Any]], output_file: Path) -> bool:
-    """Write results in CSV format"""
+    """
+    Write results in CSV format.
+
+    Args:
+        results: List of analysis result dictionaries
+        output_file: Path object for output file
+
+    Returns:
+        True if successful, False otherwise
+    """
     try:
         if not results:
             return True
@@ -120,20 +147,33 @@ def write_csv_results(results: List[Dict[str, Any]], output_file: Path) -> bool:
     except Exception as e:
         print(f"Error writing CSV results: {e}")
         return False
-    
 
-    # Backward compatibility functions
+#==========================================
+#     Backward Compatibility Functions    =
+#==========================================
+
 def write_json(results: List[Dict], filepath: str):
-    """Legacy function for writing JSON files"""
+    """
+    Legacy function for writing JSON files (no metadata).
+
+    Args:
+        results: List of dictionaries to write
+        filepath: Output file path
+    """
     try:
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=4)
     except Exception as e:
         print(f"Error writing JSON: {e}")
 
-
 def write_csv(results: List[Dict], filepath: str):
-    """Legacy function for writing CSV files"""
+    """
+    Legacy function for writing CSV files (writes all keys as columns).
+
+    Args:
+        results: List of dictionaries to write
+        filepath: Output file path
+    """
     if not results:
         print("No results to write into the CSV")
         return

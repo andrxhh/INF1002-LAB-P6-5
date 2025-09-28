@@ -1,17 +1,19 @@
-# rule: keywords
 from __future__ import annotations
 
 import re
 from typing import Dict, List, Tuple
 from phishguard.schema import EmailRecord, RuleHit, Severity
 
+#==========================================
+#           Regex Pattern Helpers         =
+#==========================================
+
 def _compile_pattern(phrase: str, ci: bool, word_boundaries: bool) -> re.Pattern:
     """
-        Build a regex pattern from a keyword.
-        if word_boundaries is True, the pattern will match whole words only.
-        if Case Insensitive (ci) is True, the pattern will be case insensitive.
+    Build a regex pattern from a keyword.
+    If word_boundaries is True, the pattern will match whole words only.
+    If Case Insensitive (ci) is True, the pattern will be case insensitive.
     """
-    
     core_pattern = re.escape(phrase)
     if word_boundaries:
         pattern = r'\b' + core_pattern + r'\b'
@@ -22,20 +24,24 @@ def _compile_pattern(phrase: str, ci: bool, word_boundaries: bool) -> re.Pattern
 
 def _count_occurrence(text: str, pattern: re.Pattern) -> int:
     """
-        Count occurrences of a pattern in a text.
+    Count occurrences of a pattern in a text.
     """
-
     if not text:
         return 0
-    return sum(1 for _ in pattern.finditer(text)) # More memory efficient than len(pattern.findall(text))'
+    # More memory efficient than len(pattern.findall(text))
+    return sum(1 for _ in pattern.finditer(text))
+
+#==========================================
+#      Occurrence Allocation & Scoring    =
+#==========================================
 
 def _allocate_with_cap(segment_counts: List[Tuple[str, int, float]], per_phrase_max: int) -> Tuple[float, List[Tuple[str, int]]]:
     """
-        Allocate occurrences to segments, favoring higher positions first (subject > intro > body).
-        Returns (effective_weighted_occurrence, [(segment, count), ...])
+    Allocate occurrences to segments, favoring higher positions first (subject > intro > body).
+    Returns (effective_weighted_occurrence, [(segment, count), ...])
     """
-
-    ordered = sorted(segment_counts, key=lambda x: x[2], reverse=True)  # Sort by weight in descending order
+    # Sort by weight in descending order
+    ordered = sorted(segment_counts, key=lambda x: x[2], reverse=True)
     remaining = per_phrase_max
     effective_weighted_occurrence = 0.0
     used_count: List[Tuple[str, int]] = []
@@ -47,18 +53,24 @@ def _allocate_with_cap(segment_counts: List[Tuple[str, int, float]], per_phrase_
         effective_weighted_occurrence += alloc * boost
         used_count.append((segment, alloc))
         remaining -= alloc
-    # Retain original order
+    # Retain original order for reporting
     seg_to_count = {seg: cnt for seg, cnt in used_count}
     original_used_count = [(seg, seg_to_count[seg]) for seg, _, _ in segment_counts]
     return effective_weighted_occurrence, original_used_count
 
+#==========================================
+#           Main Rule: Keywords           =
+#==========================================
+
 def rule_keywords(rec: EmailRecord, config: Dict) -> RuleHit:
     """
-        Detects keywords in email fields (subject, intro and body) and returns score based on occurrence, 
-        weight and position in the email. Higher weight is given to keywords found in Subject and Intro 
-        (first 200 characters). The scores are also capped by per_phrase_max and max_total.
+    Detects keywords in email fields (subject, intro and body) and returns score based on occurrence, 
+    weight and position in the email. Higher weight is given to keywords found in Subject and Intro 
+    (first 200 characters). The scores are also capped by per_phrase_max and max_total.
     """
-
+    #-------------------------------
+    #   Load Configuration Values
+    #-------------------------------
     cfg = (config or {}).get("rules", {}).get("keywords", {})
     if not cfg.get("enabled", True):
         return RuleHit("keywords", True, 0.0, Severity.LOW, {"reason": "rule disabled"})
@@ -84,22 +96,29 @@ def rule_keywords(rec: EmailRecord, config: Dict) -> RuleHit:
     total_score = 0.0
     details: List[str] = []
 
-    # Check if subject is fully capitalized
+    #-------------------------------
+    #   Subject All Caps Penalty
+    #-------------------------------
+    # Apply penalty if subject is fully capitalized
     if all_caps_boost and subject and subject.upper() == subject:
         total_score += all_caps_boost
         details.append(f"Subject all caps(+{all_caps_boost})")
 
+    #-------------------------------
+    #   Keyword Detection & Scoring
+    #-------------------------------
     for phrase, weight in weights.items():
         if not phrase or weight <= 0.0:
             continue
         weight = float(weight)
-        pattern = _compile_pattern(phrase, ci, word_boundaries = word_boundaries)
+        pattern = _compile_pattern(phrase, ci, word_boundaries=word_boundaries)
 
         # Count occurrences per segment (Subject, Intro, Body)
         c_subject = _count_occurrence(subject, pattern)
         c_intro = 0
         c_body = 0
 
+        # Split intro/body by character position in body
         for match in pattern.finditer(body):
             if match.start() < intro_char:
                 c_intro += 1
@@ -111,10 +130,12 @@ def rule_keywords(rec: EmailRecord, config: Dict) -> RuleHit:
 
         # Allocate occurrences up till per_phrase_max, favoring higher weighted segments first
         effective_weighted_occurrence, used_count = _allocate_with_cap(
-            segment_counts=[("subject", c_subject, subject_boost),
-            ("intro", c_intro, intro_boost), 
-            ("body", c_body, body_boost)],
-            per_phrase_max = per_phrase_max
+            segment_counts=[
+                ("subject", c_subject, subject_boost),
+                ("intro", c_intro, intro_boost), 
+                ("body", c_body, body_boost)
+            ],
+            per_phrase_max=per_phrase_max
         )
 
         phrase_score = effective_weighted_occurrence * weight
@@ -129,6 +150,9 @@ def rule_keywords(rec: EmailRecord, config: Dict) -> RuleHit:
                 total_score = max_total
                 break
     
+    #-------------------------------
+    #   Severity & Result Assembly
+    #-------------------------------
     severity = Severity.LOW if total_score < 1.0 else Severity.MEDIUM
     passed = (total_score == 0.0)
     details = {"breakdown": " | ".join(details)} if details else {"hits": "none"}
