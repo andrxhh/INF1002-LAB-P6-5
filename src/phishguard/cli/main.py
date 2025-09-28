@@ -54,6 +54,11 @@ def main():
     ap.add_argument("--gui", help ="# Launch graphical interface")
 
     args = ap.parse_args()
+    
+    if not (args.eml or args.record_json or args.folder):
+        print("Use --eml or --record_json or --folder to indicate path of input file/folder or --help")
+        return 
+    
 
     print(ap)  # Debug: print the argument parser
 
