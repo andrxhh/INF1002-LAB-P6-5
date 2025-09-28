@@ -19,6 +19,11 @@ from phishguard.reporting.writers import write_json_results, write_csv_results
 from phishguard.storage.storage import *
 
 
+import warnings
+
+# Ignore all warnings
+warnings.simplefilter('ignore')
+
 # def load_config_json(path: str | None) -> Dict:
 #     if not path:
 #         return {}
@@ -68,11 +73,13 @@ def main():
     ap.add_argument("--storage-dir", help="Directory for storage output (default: ./outPutResult)")
     ap.add_argument("--gui", help ="# Launch graphical interface")
     args = ap.parse_args()
-
-    print(ap)
-
+    
+    if not (args.eml or args.record_json or args.folder):
+        print("Use --eml or --record_json or --folder to indicate path of input file/folder or --help")
+        return 
     
     CFG = load_config()
+
 
     if args.eml:
         results = evaluate_email_file(args.eml, RULES, CFG)

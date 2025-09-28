@@ -12,6 +12,7 @@ except ImportError:
 
 def rule_lookalike_domain(rec: EmailRecord, config: Dict) -> RuleHit:
     """Simple lookalike domain detection"""
+    config = (config or {}).get("rules", {}).get("lookalike_domain", {})
     
     # Skip if library not available
     if not LEVENSHTEIN_AVAILABLE:
@@ -24,11 +25,7 @@ def rule_lookalike_domain(rec: EmailRecord, config: Dict) -> RuleHit:
     sender_domain = rec.from_addr.split('@')[-1].lower()
     
     # Common legitimate domains to check against
-    legitimate_domains = [
-        "gmail.com", "yahoo.com", "outlook.com", "hotmail.com",
-        "paypal.com", "amazon.com", "microsoft.com", "google.com", 
-        "apple.com", "facebook.com", "twitter.com", "linkedin.com"
-    ]
+    legitimate_domains = config.get("protected_domains", [])
     
     # Check if sender domain is suspiciously similar to any legitimate domain
     for legit_domain in legitimate_domains:
