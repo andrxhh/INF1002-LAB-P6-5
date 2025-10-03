@@ -2,7 +2,7 @@ import unittest
 
 from typing import List , Dict
 from phishguard.schema import EmailRecord
-from phishguard.rules.whitelist import check_domain_whitelist
+from phishguard.rules.whitelist import rule_domain_whitelist
 from phishguard.config import load_config
 import copy
 
@@ -43,7 +43,7 @@ class TestWhitelist(unittest.TestCase):
         # Take deep copy of EXAMPLE_WHITELIST and modify 'enabled' = True for this test.
         TEST_ENABLED_TRUE: Dict = copy.deepcopy(EXAMPLE_WHITELIST)
         TEST_ENABLED_TRUE['rules']['whitelist']['enabled']  = True
-        hit = check_domain_whitelist(BASE_REC, TEST_ENABLED_TRUE)
+        hit = rule_domain_whitelist(BASE_REC, TEST_ENABLED_TRUE)
         
         # expected -0.5, because Whitelist is enabled and BASE_REC.from_addr is in whitelist
         self.assertEqual(hit.score_delta, -0.5) 
@@ -54,7 +54,7 @@ class TestWhitelist(unittest.TestCase):
         # Take deep copy of EXAMPLE_WHITELIST and modify 'enabled' = False for this test.
         TEST_ENABLED_FALSE: Dict = copy.deepcopy(EXAMPLE_WHITELIST)
         TEST_ENABLED_FALSE['rules']['whitelist']['enabled']  = False
-        hit = check_domain_whitelist(BASE_REC, TEST_ENABLED_FALSE)
+        hit = rule_domain_whitelist(BASE_REC, TEST_ENABLED_FALSE)
         
         # expected 0.0, Whitelist is disabled no checks were done, although BASE_REC.from_addr is in whitelist
         self.assertEqual(hit.score_delta, 0.0)
@@ -90,12 +90,12 @@ class TestWhitelist(unittest.TestCase):
         EMPTY_EMAIL.from_addr = ""
         
         # Run whitelist checks for each test case
-        nosubdomain_hit = check_domain_whitelist(BASE_REC, TEST_SUBDOMAIN_ENABLED)
-        cs_hit = check_domain_whitelist(CS_SUBD_REC, TEST_SUBDOMAIN_ENABLED)
-        meds_hit = check_domain_whitelist(MEDS_SUBD_REC, TEST_SUBDOMAIN_ENABLED)
-        ntu_hit = check_domain_whitelist(NONWHITELISTED_DOMAIN, TEST_SUBDOMAIN_ENABLED)
-        invalid_hit = check_domain_whitelist(INVALID_EMAIL_FORMAT, TEST_SUBDOMAIN_ENABLED)
-        empty_hit = check_domain_whitelist(EMPTY_EMAIL, TEST_SUBDOMAIN_ENABLED)
+        nosubdomain_hit = rule_domain_whitelist(BASE_REC, TEST_SUBDOMAIN_ENABLED)
+        cs_hit = rule_domain_whitelist(CS_SUBD_REC, TEST_SUBDOMAIN_ENABLED)
+        meds_hit = rule_domain_whitelist(MEDS_SUBD_REC, TEST_SUBDOMAIN_ENABLED)
+        ntu_hit = rule_domain_whitelist(NONWHITELISTED_DOMAIN, TEST_SUBDOMAIN_ENABLED)
+        invalid_hit = rule_domain_whitelist(INVALID_EMAIL_FORMAT, TEST_SUBDOMAIN_ENABLED)
+        empty_hit = rule_domain_whitelist(EMPTY_EMAIL, TEST_SUBDOMAIN_ENABLED)
         
         # Assert expected results for each scenario
         self.assertEqual(nosubdomain_hit.score_delta, 0.0)   # expected 0.0, BASE_REC.from_addr does NOT contain a subdomain
@@ -135,12 +135,12 @@ class TestWhitelist(unittest.TestCase):
         EMPTY_EMAIL.from_addr = ""
         
         # Run whitelist checks for each test case
-        nosubdomain_hit = check_domain_whitelist(BASE_REC, TEST_SUBDOMAIN_ENABLED)
-        cs_hit = check_domain_whitelist(CS_SUBD_REC, TEST_SUBDOMAIN_ENABLED)
-        meds_hit = check_domain_whitelist(MEDS_SUBD_REC, TEST_SUBDOMAIN_ENABLED)
-        ntu_hit = check_domain_whitelist(NONWHITELISTED_DOMAIN, TEST_SUBDOMAIN_ENABLED)
-        invalid_hit = check_domain_whitelist(INVALID_EMAIL_FORMAT, TEST_SUBDOMAIN_ENABLED)
-        empty_hit = check_domain_whitelist(EMPTY_EMAIL, TEST_SUBDOMAIN_ENABLED)
+        nosubdomain_hit = rule_domain_whitelist(BASE_REC, TEST_SUBDOMAIN_ENABLED)
+        cs_hit = rule_domain_whitelist(CS_SUBD_REC, TEST_SUBDOMAIN_ENABLED)
+        meds_hit = rule_domain_whitelist(MEDS_SUBD_REC, TEST_SUBDOMAIN_ENABLED)
+        ntu_hit = rule_domain_whitelist(NONWHITELISTED_DOMAIN, TEST_SUBDOMAIN_ENABLED)
+        invalid_hit = rule_domain_whitelist(INVALID_EMAIL_FORMAT, TEST_SUBDOMAIN_ENABLED)
+        empty_hit = rule_domain_whitelist(EMPTY_EMAIL, TEST_SUBDOMAIN_ENABLED)
         
         # Assert expected results for each scenario
         self.assertEqual(nosubdomain_hit.score_delta, -0.5)   # expected -0.5, BASE_REC.from_addr does NOT contain a subdomain, but domain in TEST_SUBDOMAIN_ENABLED

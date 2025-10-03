@@ -1,6 +1,6 @@
 import unittest
 from phishguard.schema import EmailRecord
-from phishguard.rules.url_redflags import detect_urlredflags
+from phishguard.rules.url_redflags import rule_urlredflags
 from phishguard.config import load_config
 
 # Base email record used as a template for test cases
@@ -27,8 +27,8 @@ class TestUrlDetection(unittest.TestCase):
         """
         rec_legit = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["https://www.google.com"]})
         rec_phish = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["https://172.217.16.142/"]})
-        hit_pos = detect_urlredflags(rec_phish, CFG)
-        hit_neg = detect_urlredflags(rec_legit, CFG)
+        hit_pos = rule_urlredflags(rec_phish, CFG)
+        hit_neg = rule_urlredflags(rec_legit, CFG)
         self.assertEqual(hit_pos.score_delta, 1.5)
         self.assertEqual(hit_neg.score_delta, 0.0)
 
@@ -39,8 +39,8 @@ class TestUrlDetection(unittest.TestCase):
         """
         rec_legit = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["https://www.facebook.com"]})
         rec_phish = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["http://www.google.com@malicious.com"]})
-        hit_pos = detect_urlredflags(rec_phish, CFG)
-        hit_neg = detect_urlredflags(rec_legit, CFG)
+        hit_pos = rule_urlredflags(rec_phish, CFG)
+        hit_neg = rule_urlredflags(rec_legit, CFG)
         self.assertEqual(hit_pos.score_delta, 1.5)
         self.assertEqual(hit_neg.score_delta, 0.0)
 
@@ -51,8 +51,8 @@ class TestUrlDetection(unittest.TestCase):
         """
         rec_legit = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["https://mail.google.com"]})
         rec_phish = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["http://login.paypal.com.secure.verify.example.com"]})
-        hit_pos = detect_urlredflags(rec_phish, CFG)
-        hit_neg = detect_urlredflags(rec_legit, CFG)
+        hit_pos = rule_urlredflags(rec_phish, CFG)
+        hit_neg = rule_urlredflags(rec_legit, CFG)
         self.assertEqual(hit_pos.score_delta, 2.0)
         self.assertEqual(hit_neg.score_delta, 0.0)
 
@@ -63,8 +63,8 @@ class TestUrlDetection(unittest.TestCase):
         """
         rec_legit = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["https://www.amazon.com/product/12345"]})
         rec_phish = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["https://bit.ly/3xYzAbC"]})
-        hit_pos = detect_urlredflags(rec_phish, CFG)
-        hit_neg = detect_urlredflags(rec_legit, CFG)
+        hit_pos = rule_urlredflags(rec_phish, CFG)
+        hit_neg = rule_urlredflags(rec_legit, CFG)
         self.assertEqual(hit_pos.score_delta, 1.5)
         self.assertEqual(hit_neg.score_delta, 0.0)
 
@@ -75,8 +75,8 @@ class TestUrlDetection(unittest.TestCase):
         """
         rec_legit = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["https://www.wikipedia.org/wiki/Python"]})
         rec_phish = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["https://secure-paypal.com/login/verify"]})
-        hit_pos = detect_urlredflags(rec_phish, CFG)
-        hit_neg = detect_urlredflags(rec_legit, CFG)
+        hit_pos = rule_urlredflags(rec_phish, CFG)
+        hit_neg = rule_urlredflags(rec_legit, CFG)
         self.assertEqual(hit_pos.score_delta, 1.0)
         self.assertEqual(hit_neg.score_delta, 0.0)
 
@@ -87,8 +87,8 @@ class TestUrlDetection(unittest.TestCase):
         """
         rec_legit = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["https://www.microsoft.com"]})
         rec_phish = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["http://secure-login.xyz"]})
-        hit_pos = detect_urlredflags(rec_phish, CFG)
-        hit_neg = detect_urlredflags(rec_legit, CFG)
+        hit_pos = rule_urlredflags(rec_phish, CFG)
+        hit_neg = rule_urlredflags(rec_legit, CFG)
         self.assertEqual(hit_pos.score_delta, 1.0)
         self.assertEqual(hit_neg.score_delta, 0.0)
 
@@ -98,7 +98,7 @@ class TestUrlDetection(unittest.TestCase):
         Should sum all relevant scores (expected: 5.5).
         """
         rec_phish = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["http://192.168.0.1@bit.ly/login"]})
-        hit_pos = detect_urlredflags(rec_phish, CFG)
+        hit_pos = rule_urlredflags(rec_phish, CFG)
         self.assertEqual(hit_pos.score_delta, 5.5)
 
     def test_legitimate_complex(self):
@@ -107,7 +107,7 @@ class TestUrlDetection(unittest.TestCase):
         Should not be flagged (score 0.0).
         """
         rec_legit = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["https://shop.amazon.co.uk/product/12345"]})
-        hit_neg = detect_urlredflags(rec_legit, CFG)
+        hit_neg = rule_urlredflags(rec_legit, CFG)
         self.assertEqual(hit_neg.score_delta, 0.0)
 
     def test_edge_cases(self):
@@ -117,8 +117,8 @@ class TestUrlDetection(unittest.TestCase):
         """
         legit1 = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["https://example.com/path?user=name@example.com"]})
         legit2 = BASE_REC.__class__(**{**BASE_REC.__dict__, "urls": ["https://www.example.tech"]})
-        hit1 = detect_urlredflags(legit1, CFG)
-        hit2 = detect_urlredflags(legit2, CFG)
+        hit1 = rule_urlredflags(legit1, CFG)
+        hit2 = rule_urlredflags(legit2, CFG)
         self.assertEqual(hit1.score_delta, 0.0)
         self.assertEqual(hit2.score_delta, 0.0)
 
