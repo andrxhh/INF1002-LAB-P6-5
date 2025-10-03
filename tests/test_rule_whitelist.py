@@ -81,7 +81,7 @@ class TestWhitelist(unittest.TestCase):
         MEDS_SUBD_REC.from_addr = "support@meds.nus.edu.sg" # subdomain meds in subdomain list
         
         NONWHITELISTED_DOMAIN = copy.deepcopy(BASE_REC) # subdomain and domain not whitelisted
-        NONWHITELISTED_DOMAIN.from_addr = "support@sg.ntu.edu.sg"
+        NONWHITELISTED_DOMAIN.from_addr = "support@sg.ndu.edu.sg"
         
         INVALID_EMAIL_FORMAT = copy.deepcopy(BASE_REC) # email without @ sign 
         INVALID_EMAIL_FORMAT.from_addr = "asfgoogle.com"
@@ -93,7 +93,7 @@ class TestWhitelist(unittest.TestCase):
         nosubdomain_hit = rule_domain_whitelist(BASE_REC, TEST_SUBDOMAIN_ENABLED)
         cs_hit = rule_domain_whitelist(CS_SUBD_REC, TEST_SUBDOMAIN_ENABLED)
         meds_hit = rule_domain_whitelist(MEDS_SUBD_REC, TEST_SUBDOMAIN_ENABLED)
-        ntu_hit = rule_domain_whitelist(NONWHITELISTED_DOMAIN, TEST_SUBDOMAIN_ENABLED)
+        ndu_hit = rule_domain_whitelist(NONWHITELISTED_DOMAIN, TEST_SUBDOMAIN_ENABLED)
         invalid_hit = rule_domain_whitelist(INVALID_EMAIL_FORMAT, TEST_SUBDOMAIN_ENABLED)
         empty_hit = rule_domain_whitelist(EMPTY_EMAIL, TEST_SUBDOMAIN_ENABLED)
         
@@ -101,7 +101,7 @@ class TestWhitelist(unittest.TestCase):
         self.assertEqual(nosubdomain_hit.score_delta, 0.0)   # expected 0.0, BASE_REC.from_addr does NOT contain a subdomain
         self.assertEqual(cs_hit.score_delta, 0.0)            # expected 0.0, CS_SUBD_REC.from_addr subdomain NOT in TEST_SUBDOMAIN_ENABLED
         self.assertEqual(meds_hit.score_delta, -0.5)         # expected -0.5, MEDS_SUBD_REC.from_addr subdomain and domain IN TEST_SUBDOMAIN_ENABLED
-        self.assertEqual(ntu_hit.score_delta, 0.0)           # expected 0.0, NONWHITELISTED_DOMAIN.from_addr subdomain and domain NOT in whitelist
+        self.assertEqual(ndu_hit.score_delta, 0.0)           # expected 0.0, NONWHITELISTED_DOMAIN.from_addr subdomain and domain NOT in whitelist
         self.assertEqual(invalid_hit.score_delta, 0.0)       # expected 0.0, INVALID_EMAIL_FORMAT.from_addr is invalid format so skip whitelist check and return 
         self.assertEqual(empty_hit.score_delta, 0.0)         # expected 0.0, EMPTY_EMAIL.from_addr is "" so skip whitelist check and return
 
@@ -126,7 +126,7 @@ class TestWhitelist(unittest.TestCase):
         MEDS_SUBD_REC.from_addr = "support@meds.nus.edu.sg" # subdomain meds in subdomain list
         
         NONWHITELISTED_DOMAIN = copy.deepcopy(BASE_REC) # subdomain and domain not whitelisted
-        NONWHITELISTED_DOMAIN.from_addr = "support@sg.ntu.edu.sg"
+        NONWHITELISTED_DOMAIN.from_addr = "support@sg.ndu.edu.sg"
         
         INVALID_EMAIL_FORMAT = copy.deepcopy(BASE_REC) # email without @ sign 
         INVALID_EMAIL_FORMAT.from_addr = "asfgoogle.com"
@@ -138,7 +138,7 @@ class TestWhitelist(unittest.TestCase):
         nosubdomain_hit = rule_domain_whitelist(BASE_REC, TEST_SUBDOMAIN_ENABLED)
         cs_hit = rule_domain_whitelist(CS_SUBD_REC, TEST_SUBDOMAIN_ENABLED)
         meds_hit = rule_domain_whitelist(MEDS_SUBD_REC, TEST_SUBDOMAIN_ENABLED)
-        ntu_hit = rule_domain_whitelist(NONWHITELISTED_DOMAIN, TEST_SUBDOMAIN_ENABLED)
+        ndu_hit = rule_domain_whitelist(NONWHITELISTED_DOMAIN, TEST_SUBDOMAIN_ENABLED)
         invalid_hit = rule_domain_whitelist(INVALID_EMAIL_FORMAT, TEST_SUBDOMAIN_ENABLED)
         empty_hit = rule_domain_whitelist(EMPTY_EMAIL, TEST_SUBDOMAIN_ENABLED)
         
@@ -146,7 +146,7 @@ class TestWhitelist(unittest.TestCase):
         self.assertEqual(nosubdomain_hit.score_delta, -0.5)   # expected -0.5, BASE_REC.from_addr does NOT contain a subdomain, but domain in TEST_SUBDOMAIN_ENABLED
         self.assertEqual(cs_hit.score_delta, -0.5)            # expected -0.5, CS_SUBD_REC.from_addr subdomain IGNORED, but domain in TEST_SUBDOMAIN_ENABLED
         self.assertEqual(meds_hit.score_delta, -0.5)         # expected -0.5, MEDS_SUBD_REC.from_addr subdomain IGNORED and domain IN TEST_SUBDOMAIN_ENABLED
-        self.assertEqual(ntu_hit.score_delta, 0.0)           # expected 0.0, NONWHITELISTED_DOMAIN.from_addr subdomain IGNORED and domain NOT in TEST_SUBDOMAIN_ENABLED
+        self.assertEqual(ndu_hit.score_delta, 0.0)           # expected 0.0, NONWHITELISTED_DOMAIN.from_addr subdomain IGNORED and domain NOT in TEST_SUBDOMAIN_ENABLED
         self.assertEqual(invalid_hit.score_delta, 0.0)       # expected 0.0, INVALID_EMAIL_FORMAT.from_addr is invalid format so skip whitelist check and return 
         self.assertEqual(empty_hit.score_delta, 0.0)         # expected 0.0, EMPTY_EMAIL.from_addr is "" so skip whitelist check and return
 

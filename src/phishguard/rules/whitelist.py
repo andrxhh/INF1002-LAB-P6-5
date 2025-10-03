@@ -36,7 +36,7 @@ def rule_domain_whitelist(rec: EmailRecord, config: Dict):
             sender_domain: str = emailaddr.split("@")[1].lower()
         else:
             # Invalid email format (missing '@')
-            return RuleHit("whitelist", True, 0.0, Severity.LOW, {"reason": "invalid email format"})
+            return RuleHit("whitelist", False, 0.0, Severity.LOW, {"reason": "invalid email format"})
         
         # Iterate through all whitelisted domains
         for whitelisted_domain in domain_whitelist.keys():
