@@ -22,7 +22,6 @@ def analyze_url_features(url, cfg):
     Returns a dictionary of feature flags.
     """
     urlnetloc: str = urlparse(url).netloc
-    print(urlnetloc)
     sus_keyword: List[str] = cfg.get("suspicious_keyword_path")
     sus_tlds: List[str] = cfg.get("suspicious_tlds")
     shortener_domains: List[str] = cfg.get("shortener_domains")
@@ -103,7 +102,6 @@ def rule_urlredflags(rec: EmailRecord, config: Dict):
                     count_at += 1
 
                 if num_subdomains > 3:
-                    print(url)
                     total_score += cfg.get("subdomain_limit_penalty") # 2.0 score
                     count_subdomains += 1
 
