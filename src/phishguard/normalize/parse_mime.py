@@ -46,7 +46,7 @@ def normalize_header(msg: EmailMessage) -> Dict[str, str]:
     """
     
     multi_header = {'received'}  # Headers that can appear multiple times
-    key_headers = ["subject", "from", "reply-to", "return-path", "received"]
+    key_headers = ["subject", "from", "reply-to", "return-path", "received","to"]
 
     output: Dict[str, str] = {}
     for key in key_headers:
@@ -159,7 +159,12 @@ def extract_body(msg: EmailMessage) -> Tuple[str, Optional[str]]:
                     charset = msg.get_content_charset('utf-8') or 'utf-8'
                     if charset.lower() == 'unknown-8bit':
                         charset = 'utf-8'
-                    plain_texts.append(payload.decode(charset, errors='replace'))
+                    try:
+                        plain_texts.append(payload.decode(charset or "utf-8", errors="replace"))
+                    except LookupError:
+                        # Fallback if charset is invalid (like "default")
+                        plain_texts.append(payload.decode("utf-8", errors="replace"))
+
         elif content_type == "text/html" and html_texts is None:
             try:
                 html_texts = msg.get_content().strip()
