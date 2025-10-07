@@ -22,7 +22,7 @@ def analyze_url_features(url, cfg):
     Returns a dictionary of feature flags.
     """
     urlnetloc: str = urlparse(url).netloc
-
+    print(urlnetloc)
     sus_keyword: List[str] = cfg.get("suspicious_keyword_path")
     sus_tlds: List[str] = cfg.get("suspicious_tlds")
     shortener_domains: List[str] = cfg.get("shortener_domains")
@@ -37,7 +37,7 @@ def analyze_url_features(url, cfg):
         # Checks for '@' symbol in the domain
         "has_at_symbol": "@" in urlnetloc,
         # Counts subdomains (naive: total dots minus 2)
-        "num_subdomains": len(url.split(".")) - 2 if url else 0,
+        "num_subdomains": len(re.sub(r"^www\.", "", urlnetloc).split(".")) - 2 if url else 0,
         # Checks if domain is a known shortener
         "has_shortened_domain": any(part.lower() in shortener_domains for part in urlnetloc_split_at),
         # Checks for suspicious keywords in the path
@@ -103,8 +103,9 @@ def rule_urlredflags(rec: EmailRecord, config: Dict):
                     count_at += 1
 
                 if num_subdomains > 3:
+                    print(url)
                     total_score += cfg.get("subdomain_limit_penalty") # 2.0 score
-                    count_subdomains += num_subdomains
+                    count_subdomains += 1
 
                 if has_shortened_domain:
                     total_score += cfg.get("shortener_penalty") # 1.2 score
@@ -121,7 +122,7 @@ def rule_urlredflags(rec: EmailRecord, config: Dict):
             # Collect details for reporting
             details.append(f"ip_in_url: {count_ip}")
             details.append(f"at_symbol: {count_at}")
-            details.append(f"no_of_subdomains: {count_subdomains}")
+            details.append(f"url_>3_subdomains: {count_subdomains}")
             details.append(f"shortened_domain: {count_shortdomains}")
             details.append(f"suspicious_keyword: {count_suskeyword}")
             details.append(f"suspicious_tld: {count_sustlds}")
