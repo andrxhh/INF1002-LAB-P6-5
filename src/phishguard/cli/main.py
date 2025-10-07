@@ -10,7 +10,7 @@ from phishguard.pipeline.evaluate import evaluate_email_file
 from phishguard.normalize.parse_mime import *
 from phishguard.features.extractors import *
 from phishguard.schema import EmailRecord
-from phishguard.reporting.writers import write_json_results, write_csv_results
+from phishguard.reporting.writers import write_json_results, write_csv_results ,write_results
 from phishguard.storage.storage import *
 
 def launch_gui():
@@ -129,6 +129,7 @@ def main():
             manager.save(results)
         else:
             out = args.out_csv or "results.csv"
+            Path(out).parent.mkdir(parents=True, exist_ok = True)
             write_csv_results(results, Path(out))
             print(f"Wrote {out} with {len(results)} rows.")
         return
