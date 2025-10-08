@@ -24,7 +24,7 @@ def launch_gui():
         
         # Create and run GUI
         root = tk.Tk()
-        app = PhishingDetectorGUI(root)
+        PhishingDetectorGUI(root)
         
         print("✅ GUI initialized successfully")
         print("📱 Application ready for use")
