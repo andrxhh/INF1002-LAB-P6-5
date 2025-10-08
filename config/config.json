@@ -155,7 +155,16 @@
         "join":0.4,
         "sale":0.5,
         "porn":2.0,
-        "friend":2.0
+        "friend":2.0,
+        "financial":1.0,
+        "savings":0.8,
+        "Protecting/Protect":1.2,
+        "Investment":0.7,
+        "Cancer":1.5,
+        "Slim":1.0,
+        "Child Support":1.2,
+        "Singles":1.5,
+        "Price":1.6
       },
       "count": {
         "per_phrase_max": 2,
