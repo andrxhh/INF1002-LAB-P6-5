@@ -173,7 +173,16 @@
         "intro_boost": 1.25,
         "body_boost": 1.0,
         "allcaps_subject_penalty": 1.5
-      }
+      },
+      "suspicious_email_localpart":[
+     "sex", "xxx", "porn", "nude", "adult", "erotic", "horny", "dating", "hookup", "milf", "teen",
+    "loan", "credit", "cash", "money", "creditcard", "paypal", "bitcoin", "free", "prize", "reward", "bonus", "jackpot", "millionaire",
+     "offer", "deal", "discount", "cheap", "win", "giveaway", "promo", "click", "urgent", "important", "alert", "limited",
+     "casino", "poker", "betting", "roulette", "blackjack", "lottery","smoking",
+     "aaa", "xxx", "girl_with_toys", "hot_babe", "sexy_queen",
+     "admin", "support", "service", "helpdesk", "security", "verification", "update", "account", "login", "bank"
+ ]
+    
     },
 
     "reply_to_mismatch": {
