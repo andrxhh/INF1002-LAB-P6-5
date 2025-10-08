@@ -98,7 +98,7 @@
         "account activity": 0.8,
         "account review": 0.7,
         "account access": 1.0,
-        "identity verification": 1.1,
+        "identity verification": 1.0,
         "account information": 0.7,
         "security warning": 0.9,
         "account expired": 1.0,
@@ -165,7 +165,7 @@
         "Slim": 1.0,
         "Child Support": 1.2,
         "Singles": 1.5,
-        "Price": 1.6
+        "Price": 1.2
       },
       "count": {
         "per_phrase_max": 2,
