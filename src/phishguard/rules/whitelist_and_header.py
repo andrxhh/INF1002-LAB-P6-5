@@ -7,7 +7,7 @@ from phishguard.schema import RuleHit, Severity, EmailRecord
 
 def rule_domain_whitelist(rec: EmailRecord, config: Dict):
     """
-    Combines domain whitelist, local-part check, and header-based heuristics.
+    Combines domain whitelist check, local-part check, and header-based heuristics.
     Returns a RuleHit.
     """
     passed, score, details = check_whitelist_and_localpart(rec.from_addr or "", config)

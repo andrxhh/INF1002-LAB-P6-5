@@ -1,5 +1,5 @@
 # Import individual rule functions from their respective modules
-from .headers import rule_domain_whitelist
+from .whitelist_and_header import rule_domain_whitelist
 from .url_redflags import rule_urlredflags
 from .keywords import rule_keywords
 from .lookalike_domain import rule_lookalike_domain

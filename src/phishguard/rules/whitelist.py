@@ -1,9 +1,6 @@
 import re
 from typing import List, Dict
-from phishguard.schema import EmailRecord, RuleHit, Severity
-
 import math
-from email.utils import parseaddr
 
 
 
