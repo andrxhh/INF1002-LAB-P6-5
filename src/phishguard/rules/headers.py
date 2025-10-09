@@ -4,6 +4,11 @@ from typing import Dict
 from phishguard.schema import RuleHit, Severity, EmailRecord  
 
 
+
+#==========================================
+#           Header  Rule Logic          =
+#==========================================
+
 def rule_headers_analyse(rec: EmailRecord, config: Dict) -> RuleHit: 
     """
     Analyses Anomalies in Headers of emails:
