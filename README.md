@@ -25,7 +25,7 @@ CHUA JIA JUN (2500533)
 - **Normalization:** Decodes MIME headers and bodies, extracts addresses, and provides plain-text fallback for HTML content.
 - **Feature Extraction:** Identifies URLs, label↔href pairs, and attachments.
 - **Rule-Based Detection:**
-  - Domain allowlist (whitelisting + additional email address analysis)
+  - Email address analysis and domain allowlist (whitelisting + analysis)
   - Keyword analysis and positioning
   - Detection of look-alike domains (brand impersonation)
   - URL red flags (IP addresses, shorteners, mismatched labels, suspicious TLDs)
