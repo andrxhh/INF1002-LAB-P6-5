@@ -2,7 +2,7 @@ import unittest
 
 from typing import List , Dict
 from phishguard.schema import EmailRecord
-from phishguard.rules.whitelist_and_header import rule_domain_whitelist
+from phishguard.rules.whitelist import rule_domain_whitelist
 from phishguard.config import load_config
 import copy
 
