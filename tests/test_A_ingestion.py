@@ -1,9 +1,14 @@
-# Import the iterate_emails function from the phishguard.ingestion.loaders module
+import unittest
 from phishguard.ingestion.loaders import iterate_emails
 
-# Iterate through emails returned by iterate_emails with an empty path (update as needed)
-for origin, message in iterate_emails(r""):
-    # Get the content type of the email message, default to empty string if not present, and convert to lowercase
-    ctype = (message.get_content_type() or "").lower()
-    # Print the origin and content type of the email message
-    print(f"Origin: {origin}, Content-Type: {ctype}")
+class TestEmailIngestion(unittest.TestCase):
+    def test_iter_messages_single_file(self):
+        origin, msg = next(iterate_emails("samples\ham.7c53336b37003a9286aba55d2945844c"))
+        self.assertIn("Subject", msg)
+
+    def test_iter_messages_dir(self):
+        msgs = list(iterate_emails("samples/spam"))
+        self.assertGreater(len(msgs), 0)
+
+if __name__ == "__main__":
+    unittest.main()
