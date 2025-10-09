@@ -1,5 +1,3 @@
-# rule: lookalike_domain
-
 from typing import Dict
 from phishguard.schema import EmailRecord, RuleHit, Severity
 

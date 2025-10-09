@@ -115,3 +115,29 @@ def same_registrable(domain1: str, domain2: str, effective_tld: Iterable[str]) -
     Useful for phishing detection and domain comparison.
     """
     return registrable_domain(domain1, effective_tld) == registrable_domain(domain2, effective_tld)
+
+#==========================================
+#           Lookalike Domain Helpers      =
+#==========================================
+
+def build_lookalike_variants(pairs: Iterable[str]) -> Tuple[Dict[str, str], Dict[str, str]]:
+    """
+    Build two maps of lookalike domain variants from inputs like "1: I" and "rm: m",
+    Returns:
+        - A map of single-character substitutions (e.g., '1' -> 'I')
+        - A map of multi-character substitutions (e.g., 'rm' -> 'm')
+    """
+    char_map, seq_map = {}, {}
+    for pair in pairs:
+        if ":" not in pair:
+            continue
+        left, right = pair.split(":", 1)
+        left = left.strip()
+        right = right.strip()
+        if not left or not right:
+            continue
+        if len(left) == 1:
+            char_map[left] = right
+        else:
+            seq_map[left] = right
+    return char_map, seq_map
