@@ -47,4 +47,4 @@ tests/test_H_storage.py
 tests/test_I_cli.py
 tests/test_rule_keyword_positioning.py
 tests/test_rule_url_redflags.py
-test/test_rule_whitelist.py
+tests/test_rule_whitelist.py
