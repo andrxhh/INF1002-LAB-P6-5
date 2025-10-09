@@ -20,12 +20,18 @@ def rule_headers_analyse(rec: EmailRecord, config: Dict) -> RuleHit:
     
     # FROM header and display name mismatch 
     from_header = rec.headers.get("from", "")
+    
     display_name, email_fromheader = parseaddr(from_header)
+    
+    # Compares display_name and email_fromheader if both are present
+
     if email_fromheader and display_name:
         local_part, *_ = email_fromheader.split("@")
         norm_display = re.sub(r'[^a-z0-9]', '', display_name.lower())
         norm_local = re.sub(r'[^a-z0-9]', '', local_part.lower())
-        common_chars = sum(1 for c in norm_display if c in norm_local)
+        
+        # Finds common characters between display_name and email_fromheader
+        common_chars = sum(1 for char in norm_display if char in norm_local)
         ratio = common_chars / max(len(norm_display), 1)
 
         if ratio < 0.6:

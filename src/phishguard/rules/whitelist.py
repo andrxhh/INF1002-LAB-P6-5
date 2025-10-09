@@ -109,7 +109,8 @@ def rule_whitelist_and_analyse(rec: EmailRecord, config: Dict) -> RuleHit:
                     if sender_domain == whitelisted_domain or base_domain == whitelisted_domain:
                         domain_match = True
                         break
-
+            
+            # If match found, -0.5 score_delta and pass checks, else 0.0 and fail checks
             if domain_match:
                 score += cfg.get("score_delta_on_match", -0.5)
                 details["domain_whitelist"] = f"{emailaddr} matched whitelist"
@@ -135,13 +136,13 @@ def rule_whitelist_and_analyse(rec: EmailRecord, config: Dict) -> RuleHit:
             score += penalty
             local_flags.append("might be random generated")
             
-        # Compares local part against prefined list in config.json 
+        # Compares local part against predefined list in config.json 
         if any(word in sender_localpart for word in suspicious_words):
             passed = False
             score += penalty
             local_flags.append("contains suspicious keywords")
             
-        # Compares domain part against prefined list in config.json 
+        # Compares domain part against predefined list in config.json 
         if any(word in sender_domain for word in suspicious_words):
             passed = False
             score += penalty
