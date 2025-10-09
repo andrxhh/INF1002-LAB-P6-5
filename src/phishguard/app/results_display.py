@@ -80,7 +80,7 @@ class ResultsDisplayManager:
         safe_max = thresholds.get('safe_max', 2.0)
         phishing_min = thresholds.get('phishing_min', 2.0)
         
-        if total_score <= safe_max:
+        if total_score < safe_max:
             return "SAFE"
         elif total_score >= phishing_min:
             return "PHISHING"

@@ -10,7 +10,7 @@ from phishguard.pipeline.evaluate import evaluate_email_file
 from phishguard.normalize.parse_mime import *
 from phishguard.features.extractors import *
 from phishguard.schema import EmailRecord
-from phishguard.reporting.writers import write_json_results, write_csv_results ,write_results
+from phishguard.reporting.writers import write_json_results, write_csv_results
 from phishguard.storage.storage import *
 
 def launch_gui():
@@ -24,7 +24,7 @@ def launch_gui():
         
         # Create and run GUI
         root = tk.Tk()
-        app = PhishingDetectorGUI(root)
+        PhishingDetectorGUI(root)
         
         print("✅ GUI initialized successfully")
         print("📱 Application ready for use")
@@ -55,6 +55,11 @@ def main():
 
     args = ap.parse_args()
     
+    # Launch the GUI if requested
+    if args.gui:
+        launch_gui()
+        return
+
     if not (args.eml or args.record_json or args.folder):
         print("Use --eml or --record_json or --folder to indicate path of input file/folder or --help")
         return 
@@ -98,11 +103,11 @@ def main():
         else:
             print(json.dumps(payload, ensure_ascii=False, indent=2))
         return
+        # rec = EmailRecord(**data)  # Unused variable removed
 
-    # Evaluate a single EmailRecord JSON file
-    if args.record_json:
-        with open(args.record_json, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        results = evaluate_email_file_dict(args.record_json, RULES, CFG)
+        
+        # Output results: storage, JSON, or print
         rec = EmailRecord(**data)
 
         results = evaluate_email_file_dict(args.record_json, RULES, CFG)
