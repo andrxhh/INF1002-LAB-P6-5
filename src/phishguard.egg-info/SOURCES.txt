@@ -30,6 +30,7 @@ src/phishguard/rules/replyto.py
 src/phishguard/rules/url_redflags.py
 src/phishguard/rules/utils.py
 src/phishguard/rules/whitelist.py
+src/phishguard/rules/headers.py
 src/phishguard/schema/__init__.py
 src/phishguard/schema/classes.py
 src/phishguard/scoring/__init__.py
@@ -45,3 +46,5 @@ tests/test_G_reporting.py
 tests/test_H_storage.py
 tests/test_I_cli.py
 tests/test_rule_keyword_positioning.py
+tests/test_rule_url_redflags.py
+test/test_rule_whitelist.py
