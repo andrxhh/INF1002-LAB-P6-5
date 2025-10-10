@@ -23,15 +23,23 @@ def rule_headers_analyse(rec: EmailRecord, config: Dict) -> RuleHit:
     passed = True
     cfg = (config or {}).get("rules", {}).get("headers", {})
     
-    # FROM header and display name mismatch 
+    # Retrieving and extracting all headers into separate variables
     from_header = rec.headers.get("from", "")
+    reply_to = rec.headers.get("reply-to", "")
+    to_header = rec.headers.get("to", "")
+    received_headers = rec.headers.get("received", "")
     
+    # Unpacking into 2 variables
     display_name, email_fromheader = parseaddr(from_header)
     
+    
+    """
+    ------ 1. FROM header and display name mismatches
+    """
     # Compares display_name and email_fromheader if both are present
-
     if email_fromheader and display_name:
         local_part, *_ = email_fromheader.split("@")
+        # Use regex to remove characters that are not letters or digits
         norm_display = re.sub(r'[^a-z0-9]', '', display_name.lower())
         norm_local = re.sub(r'[^a-z0-9]', '', local_part.lower())
         
@@ -47,12 +55,16 @@ def rule_headers_analyse(rec: EmailRecord, config: Dict) -> RuleHit:
             details["from_header"] = f"Display name '{display_name}' matches local part '{local_part}'"
     else:
         details["from_header"] = "From header empty or invalid"
-
-    # REPLY-TO mismatch 
-    reply_to = rec.headers.get("reply-to", "")
+        
+        
+    """
+    ------ 2. REPLY-TO mismatch 
+    """
     if reply_to:
+        # Extracting all characters after the @ symbol in FROM and REPLY-TO headers
         from_domain = email_fromheader.split("@")[-1] if email_fromheader else ""
         reply_domain = reply_to.split("@")[-1]
+        # Compare for mismatches
         if reply_domain != from_domain:
             passed = False
             score += cfg.get("reply_to_mismatch")
@@ -62,17 +74,23 @@ def rule_headers_analyse(rec: EmailRecord, config: Dict) -> RuleHit:
     else:
         details["reply_to"] = "No Reply-To header"
 
-    # TO header containing Undisclosed recipients
-    to_header = rec.headers.get("to", "")
+
+    """
+    ------ 3. TO header containing Undisclosed recipients
+    """
+    # Checks for presence of "undisclosed" in the TO header, indicating mass send of email
     if "undisclosed" in to_header.lower():
         passed = False
         score += cfg.get("to_header_penalty")
         details["undisclosed_recipients"] = "To header contains undisclosed recipients"
     else:
         details["undisclosed_recipients"] = "Recipients visible"
-
-    # RECEIVED header anomalies
-    received_headers = rec.headers.get("received", "")
+    
+    
+    """
+    ------ 4. RECEIVED header anomalies
+    """
+    # Puts all the RECEIVED headers into a list and counts total in list, which determines the no. of hops of an email
     num_hops = len(received_headers.split("\n"))
     if num_hops > cfg.get("max_hops", 5):
         passed = False
