@@ -162,4 +162,4 @@ def rule_whitelist_and_analyse(rec: EmailRecord, config: Dict) -> RuleHit:
         severity =  Severity.LOW if score <=0.0 else Severity.MEDIUM
         
     
-    return RuleHit("whitelist", passed, score, severity, details)
+    return RuleHit("whitelist_and_analysis", passed, score, severity, details)
