@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable
+from typing import Iterable, Tuple, Dict
 
 #==========================================
 #           Regex Pattern Helpers         =
