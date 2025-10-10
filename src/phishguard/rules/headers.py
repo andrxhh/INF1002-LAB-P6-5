@@ -32,10 +32,10 @@ def rule_headers_analyse(rec: EmailRecord, config: Dict) -> RuleHit:
     # Unpacking into 2 variables
     display_name, email_fromheader = parseaddr(from_header)
     
+    #========================================================
+    #   1. FROM header and display name mismatches          =
+    #========================================================
     
-    """
-    ------ 1. FROM header and display name mismatches
-    """
     # Compares display_name and email_fromheader if both are present
     if email_fromheader and display_name:
         local_part, *_ = email_fromheader.split("@")
@@ -57,9 +57,10 @@ def rule_headers_analyse(rec: EmailRecord, config: Dict) -> RuleHit:
         details["from_header"] = "From header empty or invalid"
         
         
-    """
-    ------ 2. REPLY-TO mismatch 
-    """
+    #===============================
+    #    2. REPLY-TO mismatch      =
+    #===============================
+    
     if reply_to:
         # Extracting all characters after the @ symbol in FROM and REPLY-TO headers
         from_domain = email_fromheader.split("@")[-1] if email_fromheader else ""
@@ -75,9 +76,10 @@ def rule_headers_analyse(rec: EmailRecord, config: Dict) -> RuleHit:
         details["reply_to"] = "No Reply-To header"
 
 
-    """
-    ------ 3. TO header containing Undisclosed recipients
-    """
+    #=========================================================
+    #    3. TO header containing Undisclosed recipients      =
+    #=========================================================
+    
     # Checks for presence of "undisclosed" in the TO header, indicating mass send of email
     if "undisclosed" in to_header.lower():
         passed = False
@@ -87,9 +89,10 @@ def rule_headers_analyse(rec: EmailRecord, config: Dict) -> RuleHit:
         details["undisclosed_recipients"] = "Recipients visible"
     
     
-    """
-    ------ 4. RECEIVED header anomalies
-    """
+    #==============================================
+    #     4. RECEIVED header anomalies            = 
+    #==============================================
+    
     # Puts all the RECEIVED headers into a list and counts total in list, which determines the no. of hops of an email
     num_hops = len(received_headers.split("\n"))
     if num_hops > cfg.get("max_hops", 5):
