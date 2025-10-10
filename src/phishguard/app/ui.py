@@ -486,71 +486,33 @@ This email was sent to protect your account security."""
             messagebox.showwarning("No Data", "Please analyze a batch of emails first")
             return
         
-        # Ask user which formats they want to save
-        save_choice = messagebox.askyesnocancel(
-            "Save Format",
-            "Choose save format:\n\n"
-            "- Click 'Yes' to save as JSON\n"
-            "- Click 'No' to save as CSV\n"
-            "- Click 'Cancel' to save BOTH formats"
+        # Show simple file save dialog for text file
+        output_file = filedialog.asksaveasfilename(
+            title="Save Batch Analysis Results",
+            defaultextension=".txt",
+            filetypes=[
+                ("Text files", "*.txt"),
+                ("All files", "*.*")
+            ]
         )
         
-        if save_choice is None:
-            # User wants both formats - use automatic timestamped saving
+        # If user selected a location (didn't cancel)
+        if output_file:
             try:
-                success = self.detector.save_batch_to_file(formats=["json", "csv"])
-                if success:
-                    messagebox.showinfo("Results Saved", 
-                                      "Batch results saved in both JSON and CSV formats!\n\n"
-                                      "Files saved in: ./outPutResult/")
-                else:
-                    messagebox.showerror("Save Failed", "Failed to save batch results")
+                # Get all text from the results display area
+                results_text = self.batch_results_text.get(1.0, tk.END)
+                
+                # Write the results to the selected file
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    f.write(results_text)
+                
+                # Show success message with file location
+                messagebox.showinfo("Results Saved", 
+                                  f"Batch analysis results saved!\n\nLocation: {output_file}")
+                
             except Exception as e:
-                messagebox.showerror("Save Error", f"Error saving results: {str(e)}")
-        
-        elif save_choice is True:
-            # User wants JSON only
-            output_file = filedialog.asksaveasfilename(
-                title="Save Batch Analysis Results as JSON",
-                defaultextension=".json",
-                filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
-            )
-            
-            if output_file:
-                try:
-                    success = self.detector.save_batch_to_file(formats=["json"])
-                    if success:
-                        # Copy the auto-generated file to user's chosen location
-                        import shutil
-                        import glob
-                        latest_json = max(glob.glob("outPutResult/*.json"), key=os.path.getctime)
-                        shutil.copy(latest_json, output_file)
-                        messagebox.showinfo("Results Saved", 
-                                          f"Batch results saved as JSON!\n\nLocation: {output_file}")
-                except Exception as e:
-                    messagebox.showerror("Save Error", f"Error saving JSON: {str(e)}")
-        
-        else:
-            # User wants CSV only
-            output_file = filedialog.asksaveasfilename(
-                title="Save Batch Analysis Results as CSV",
-                defaultextension=".csv",
-                filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
-            )
-            
-            if output_file:
-                try:
-                    success = self.detector.save_batch_to_file(formats=["csv"])
-                    if success:
-                        # Copy the auto-generated file to user's chosen location
-                        import shutil
-                        import glob
-                        latest_csv = max(glob.glob("outPutResult/*.csv"), key=os.path.getctime)
-                        shutil.copy(latest_csv, output_file)
-                        messagebox.showinfo("Results Saved", 
-                                          f"Batch results saved as CSV!\n\nLocation: {output_file}")
-                except Exception as e:
-                    messagebox.showerror("Save Error", f"Error saving CSV: {str(e)}")
+                # Show error if file saving fails
+                messagebox.showerror("Save Error", f"Error saving file: {str(e)}")
     
     def clear_batch(self):
         # Clear the file selection field

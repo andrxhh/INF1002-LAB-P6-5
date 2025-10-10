@@ -1,12 +1,4 @@
-# PhishGuard Detection Engine - Simplified Pipeline Integration
-#
-# This module provides a simplified interface to the pipeline system
-# for analyzing emails and determining if they are safe, suspicious, or phishing attempts.
-#
 # Key Components:
-# - PhishingDetector: Simplified wrapper around pipeline functions
-# - Direct integration with pipeline/evaluate.py
-# - Clean batch processing capabilities
 import json
 import os
 from typing import Dict, List, Any, Optional
@@ -56,20 +48,7 @@ class PhishingDetector:
     # ========================================================================
 
     def analyze_email(self, sender: str, subject: str, body: str) -> tuple[EmailRecord, float, List[RuleHit]]:
-        """
-        Analyze a single email for phishing indicators using the pipeline.
-        
-        Args:
-            sender: Email address of the sender
-            subject: Subject line of the email
-            body: Text content of the email body
-            
-        Returns:
-            Tuple containing:
-            - EmailRecord: Structured email data
-            - float: Total risk score
-            - List[RuleHit]: Details of each security rule result
-        """
+
         # Create EmailMessage object from user input
         email_msg = EmailMessage()
         email_msg['From'] = sender
