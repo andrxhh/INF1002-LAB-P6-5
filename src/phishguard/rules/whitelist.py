@@ -124,8 +124,10 @@ def rule_whitelist_and_analyse(rec: EmailRecord, config: Dict) -> RuleHit:
             passed = False
             details["domain_whitelist"] = "rule disabled"
             
-        
-        ## Email local-part checks ##
+                
+        #==========================================
+        #          Email local-part checks        =
+        #==========================================
         local_flags = []
         domain_flags = []
         penalty = cfg.get("emailaddr_penalty", 0.9) 
