@@ -21,9 +21,13 @@ from phishguard.rules import RULES
 from phishguard.ingestion.loaders import iterate_emails
 from email.message import EmailMessage
 
-# Storage system for saving analysis results (disabled for now)
-STORAGE_AVAILABLE = False
-create_report_manager = None
+# Storage system for saving analysis results
+try:
+    from phishguard.storage import EmailReportManager
+    STORAGE_AVAILABLE = True
+except ImportError:
+    STORAGE_AVAILABLE = False
+    EmailReportManager = None
 
 #====================================
 #    Phishing Detector Engine    =
@@ -34,14 +38,18 @@ class PhishingDetector:
         # Load detection rules and configuration
         self.config = load_config(config_path) if config_path else load_config()
         
-        # Optional report manager for saving results
-        if STORAGE_AVAILABLE and create_report_manager:
+        # Initialize storage for saving results
+        if STORAGE_AVAILABLE and EmailReportManager:
             try:
-                self.report_manager = create_report_manager()
-            except Exception:
+                self.report_manager = EmailReportManager(base_name="phishguard_analysis")
+                self.batch_results = []  # Store results for batch saving
+            except Exception as e:
+                print(f"Warning: Could not initialize storage system: {e}")
                 self.report_manager = None
+                self.batch_results = []
         else:
             self.report_manager = None
+            self.batch_results = []
 
     # ========================================================================
     #                      Main Analysis Functions                           =
@@ -75,7 +83,7 @@ class PhishingDetector:
         rule_hits, total_score, classification = score_email(email_record, RULES, self.config)
         
         # Save results if storage is available
-        self._save_analysis_results(sender, subject, body, classification)
+        self._save_analysis_results(sender, subject, body, classification, total_score, rule_hits)
         
         return email_record, total_score, rule_hits
 
@@ -117,7 +125,8 @@ class PhishingDetector:
                     # Save to report manager if available
                     self._save_analysis_results(
                         email_record.from_addr, email_record.subject, 
-                        email_record.body_text or '', classification
+                        email_record.body_text or '', classification,
+                        total_score, rule_hits
                     )
                     
                 except Exception:
@@ -137,23 +146,63 @@ class PhishingDetector:
     #                         Helper Functions                               =
     # ========================================================================
 
-    def _save_analysis_results(self, sender: str, subject: str, body: str, classification: str):
+    def save_batch_to_file(self, formats: List[str] = ["json", "csv"]) -> bool:
+        """
+        Save accumulated batch results to file(s).
+        
+        Args:
+            formats: List of formats to save ('json', 'csv')
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if not self.report_manager:
+            print("Warning: Storage system not available")
+            return False
+            
+        if not self.batch_results:
+            print("Warning: No results to save")
+            return False
+            
+        try:
+            success = self.report_manager.save(self.batch_results, formats=formats)
+            if success:
+                print(f"Successfully saved {len(self.batch_results)} results")
+            return success
+        except Exception as e:
+            print(f"Error saving batch results: {e}")
+            return False
+    
+    def clear_batch_results(self):
+        """Clear accumulated batch results"""
+        self.batch_results = []
+
+    def _save_analysis_results(self, sender: str, subject: str, body: str, classification: str, total_score: float, rule_hits: List[RuleHit]):
         """Save analysis results to report manager if available"""
         if self.report_manager:
             try:
-                # Convert classification to threat level format
-                threat_mapping = {
-                    'SAFE': 'Low',
-                    'SUSPICIOUS': 'Medium', 
-                    'PHISHING': 'Critical'
+                # Create result dictionary for storage
+                result = {
+                    'from_addr': sender,
+                    'subject': subject,
+                    'classification': classification,
+                    'total_score': total_score,
+                    'rule_hits': [
+                        {
+                            'rule_name': hit.rule_name,
+                            'passed': hit.passed,
+                            'score_delta': hit.score_delta,
+                            'severity': hit.severity.value if hasattr(hit.severity, 'value') else str(hit.severity),  # Convert enum to string
+                            'details': hit.details
+                        } for hit in rule_hits
+                    ]
                 }
-                threat_level = threat_mapping.get(classification.upper(), 'Medium')
                 
-                # Save to report manager
-                self.report_manager.add_email_report(sender, subject, body, threat_level)
+                # Add to batch results
+                self.batch_results.append(result)
                 
-            except Exception:
-                pass  # Continue if storage fails
+            except Exception as e:
+                print(f"Warning: Could not save analysis results: {e}")
 
     def _generate_batch_summary(self, results: List[Dict]) -> Dict[str, Any]:
         """Generate summary statistics from batch results"""
