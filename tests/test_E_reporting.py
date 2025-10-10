@@ -1,6 +1,7 @@
 import sys
 import json 
 import csv
+import unittest
 from pathlib import Path
 
 # Set up paths to ensure the src directory is importable
@@ -29,43 +30,43 @@ sample = [
 output_dir = Path(__file__).parent / "output"
 output_dir.mkdir(exist_ok=True)
 
-def test_json():
-    """Test writing results in JSON format and validate output."""
-    output_file = output_dir / "sample_results.json"
-    json_results = writers.write_results(sample, str(output_file), format="json")
+class TestWriters(unittest.TestCase):
+    """Unit tests for phishguard.reporting.writers"""
 
-    assert json_results  # Ensure function returns a truthy value
-    assert output_file.exists()  # Ensure file was created
+    def test_json(self):
+        """Test writing results in JSON format and validate output."""
+        output_file = output_dir / "sample_results.json"
+        json_results = writers.write_results(sample, str(output_file), format="json")
 
-    data = json.loads(output_file.read_text(encoding="utf-8"))
-    assert data["metadata"]["total_emails"] == 1  # Check metadata correctness
+        self.assertTrue(json_results)
+        self.assertTrue(output_file.exists())
 
-def test_writecsv():
-    """Test writing results in CSV format and validate output."""
-    output_file = output_dir / "sample.csv"
-    csv_results = writers.write_results(sample, str(output_file), format="csv")
+        data = json.loads(output_file.read_text(encoding="utf-8"))
+        self.assertEqual(data["metadata"]["total_emails"], 1)
 
-    assert csv_results  # Ensure function returns a truthy value
-    assert output_file.exists()  # Ensure file was created
+    def test_writecsv(self):
+        """Test writing results in CSV format and validate output."""
+        output_file = output_dir / "sample.csv"
+        csv_results = writers.write_results(sample, str(output_file), format="csv")
 
-    rows = list(csv.DictReader(output_file.open(encoding="utf-8")))
-    assert len(rows) == 1  # Only one sample row should be present
-    assert rows[0]["classification"] == "phishing"  # Check field value
+        self.assertTrue(csv_results)
+        self.assertTrue(output_file.exists())
 
-def test_auto_detect_format():
-    """Ensure auto format detection works for both JSON and CSV."""
-    json_file = output_dir / "auto_results.json"
-    csv_file = output_dir / "auto_results.csv"
+        rows = list(csv.DictReader(output_file.open(encoding="utf-8")))
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["classification"], "phishing")
 
-    assert writers.write_results(sample, str(json_file), format="auto")
-    assert writers.write_results(sample, str(csv_file), format="auto")
+    def test_auto_detect_format(self):
+        """Ensure auto format detection works for both JSON and CSV."""
+        json_file = output_dir / "auto_results.json"
+        csv_file = output_dir / "auto_results.csv"
 
-    assert json_file.exists()  # JSON file should be created
-    assert csv_file.exists()   # CSV file should be created
+        self.assertTrue(writers.write_results(sample, str(json_file), format="auto"))
+        self.assertTrue(writers.write_results(sample, str(csv_file), format="auto"))
+
+        self.assertTrue(json_file.exists())
+        self.assertTrue(csv_file.exists())
+
 
 if __name__ == "__main__":
-    # Run all tests if script is executed directly
-    test_json()
-    test_writecsv()
-    test_auto_detect_format()
-    print("All tests passed!")
+    unittest.main()
