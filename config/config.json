@@ -52,7 +52,7 @@
       "include_subdomains": false,
       "score_delta_on_match": -0.5,
       "emailaddr_penalty": 0.9,
-      "suspicious_email_localpart": [
+      "suspicious_email_addr": [
         "sex",
         "xxx",
         "porn",
