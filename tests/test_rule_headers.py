@@ -20,9 +20,6 @@ Test 4: TO header contains “Undisclosed recipients” → flagged
 
 Test 5: RECEIVED header exceeds max hops → flagged
 
-Test 6: Uses the config dictionary to provide score penalties.
-
-Test 7: Checks passed flag, score_delta, and details for each cas
 """
 
 class TestRuleHeadersAnalyse(unittest.TestCase):
