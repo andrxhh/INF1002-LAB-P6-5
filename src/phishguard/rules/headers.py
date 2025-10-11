@@ -33,7 +33,7 @@ def rule_headers_analyse(rec: EmailRecord, config: Dict) -> RuleHit:
     display_name, email_fromheader = parseaddr(from_header)
     
     #========================================================
-    #   1. FROM header and display name mismatches          =
+    #   1. FROM header: display name mismatches          =
     #========================================================
     
     # Compares display_name and email_fromheader if both are present
