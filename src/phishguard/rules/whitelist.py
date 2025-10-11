@@ -70,7 +70,7 @@ def rule_whitelist_and_analyse(rec: EmailRecord, config: Dict) -> RuleHit:
     whitelist_enabled: bool = cfg.get("enabled", True)
     subdomain_enabled: bool = cfg.get("include_subdomains", False)
     domain_whitelist: Dict[str, List] = cfg.get("domains", {})
-    suspicious_words: List[str] = cfg.get("suspicious_email_localpart", [])
+    suspicious_words: List[str] = cfg.get("suspicious_email_addr", [])
     
     # Split the email into 2 parts, local part and sender_domain
     try:
