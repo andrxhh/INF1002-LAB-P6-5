@@ -159,13 +159,18 @@ class PhishingDetectorGUI:
         button_frame = ttk.Frame(self.individual_frame)
         button_frame.grid(row=1, column=0, columnspan=2, pady=15)
         
+        # Load Email File Button
+        load_file_btn = ttk.Button(button_frame, text="Load Email File", 
+                                  command=self.load_email_file)
+        load_file_btn.pack(side=tk.LEFT, padx=10)
+        
         # Analyze Email Button
         analyze_btn = ttk.Button(button_frame, text="Analyze Email", 
                                command=self.analyze_email)
         analyze_btn.pack(side=tk.LEFT, padx=10)
         
-        # Clear Fields Button
-        clear_btn = ttk.Button(button_frame, text="Clear Fields", 
+        # Clear Button
+        clear_btn = ttk.Button(button_frame, text="Clear", 
                              command=self.clear_fields)
         clear_btn.pack(side=tk.LEFT, padx=10)
         
@@ -202,22 +207,21 @@ class PhishingDetectorGUI:
         file_frame.columnconfigure(1, weight=1)  # Make file path field expandable
         
         # File/Folder Path Input and Browse Button
-        ttk.Label(file_frame, text="Email Source:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky="w", pady=5)
-        self.file_path_var = tk.StringVar()  # Variable to store selected file/folder path
+        ttk.Label(file_frame, text="Folder Path:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky="w", pady=5)
+        self.file_path_var = tk.StringVar()  # Variable to store selected folder path
         self.file_path_entry = ttk.Entry(file_frame, textvariable=self.file_path_var,   # Display selected path
                                         width=60, state='readonly', font=('Arial', 10))  # Read-only (user can't type)
         self.file_path_entry.grid(row=0, column=1, sticky="ew", padx=(10, 10), pady=5)
         
-        # Single Browse Button that handles both files and folders
-        browse_btn = ttk.Button(file_frame, text="Browse", command=self.browse_source)
+        # Browse Button for folder selection
+        browse_btn = ttk.Button(file_frame, text="Browse Folder", command=self.browse_source)
         browse_btn.grid(row=0, column=2, pady=5)
         
-        # supported file formats for uploading
+        # Instructions for folder selection
         instructions = ttk.Label(file_frame, 
-                                text="Click Browse to select:\n"
-                                     "- Email files (.txt, .mbox) - or -\n"
-                                     "- Folders containing email files\n"
-                                     "The system automatically detects and processes all valid emails",
+                                text="Click 'Browse Folder' to select a folder containing email files.\n"
+                                     "The system will automatically detect and process all email files in the folder.\n"
+                                     "For single email analysis, use the 'Individual Analysis' tab.",
                                 font=('Arial', 9), foreground='gray')
         instructions.grid(row=1, column=0, columnspan=3, sticky=tk.W, pady=(10, 0))
         
@@ -334,55 +338,76 @@ This email was sent to protect your account security."""
         self.subject_entry.insert(0, sample_subject) # Fill subject field
         self.body_text.insert(1.0, sample_body)      # Fill body text area
     
+    def load_email_file(self):
+        """Load an email file into the individual analysis form"""
+        # Show file selection dialog
+        file_path = filedialog.askopenfilename(
+            title="Select Email File to Analyze",
+            filetypes=[
+                ("All Files", "*.*"),  # Allow all files first
+                ("Email Files", "*.txt;*.mbox;*.eml"),
+                ("Text files", "*.txt"),
+                ("Unix Mailbox", "*.mbox"),
+                ("Email files", "*.eml")
+            ]
+        )
+        
+        # If user selected a file (didn't cancel)
+        if not file_path:
+            return
+        
+        try:
+            # Use the ingestion module to parse the email file
+            from phishguard.ingestion.loaders import iterate_emails
+            from pathlib import Path
+            
+            # Load and parse the email - iterate_emails handles all file types
+            emails = list(iterate_emails(Path(file_path)))
+            
+            if not emails:
+                messagebox.showerror("Load Error", "Could not parse the email file or file contains no emails")
+                return
+            
+            # Get the first email from the file
+            email_path, email_msg = emails[0]
+            
+            # Build email record from the parsed message
+            from phishguard.pipeline.evaluate import build_email_record
+            email_record = build_email_record(email_msg)
+            
+            if not email_record:
+                messagebox.showerror("Load Error", "Could not build email record from the file")
+                return
+            
+            # Clear existing content first
+            self.clear_fields()
+            
+            # Populate the form fields with the loaded email data
+            self.sender_entry.insert(0, email_record.from_addr or "")
+            self.subject_entry.insert(0, email_record.subject or "")
+            self.body_text.insert(1.0, email_record.body_text or "")
+            
+            # Show success message
+            from_addr = email_record.from_addr or "(no sender)"
+            subject = email_record.subject or "(no subject)"
+            messagebox.showinfo("File Loaded", 
+                              f"Email file loaded successfully!\n\nFrom: {from_addr}\nSubject: {subject}")
+            
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            messagebox.showerror("Load Error", f"Error loading email file:\n{str(e)}\n\nDetails:\n{error_details}")
+    
     
     # ====================================
     # Batch Analysis Functions          =
     # ====================================
     
     def browse_source(self):
-        """Smart browse function that lets user choose between file or folder"""
-        from tkinter import messagebox
-        
-        # Ask user what they want to select
-        choice = messagebox.askyesnocancel(
-            "Select Source Type",
-            "What would you like to select?\n\n"
-            "- Click 'Yes' to select an email file (.txt, .mbox)\n"
-            "- Click 'No' to select a folder containing email files\n"
-            "- Click 'Cancel' to abort"
-        )
-        
-        if choice is True:
-            # User chose to select a file
-            self._browse_file()
-        elif choice is False:
-            # User chose to select a folder
-            self._browse_folder()
-        # If choice is None, user clicked Cancel - do nothing
-    
-    def _browse_file(self):
-        """Browse and select a single email file"""
-        # Show file selection dialog with supported file types
-        file_path = filedialog.askopenfilename(
-            title="Select Email File for Batch Analysis",
-            filetypes=[
-                ("All Email Files", "*.txt;*.mbox"),  # Show all email files
-                ("Text files", "*.txt"),              # Plain text files
-                ("Unix Mailbox", "*.mbox"),           # Unix mailbox format
-                ("All files", "*.*")                  # All files (fallback)
-            ]
-        )
-        
-        # If user selected a file (didn't cancel)
-        if file_path:
-            # Store the selected file path
-            self.file_path_var.set(file_path)
-    
-    def _browse_folder(self):
-        """Browse and select a folder containing email files"""
+        """Browse and select a folder containing email files for batch analysis"""
         # Show folder selection dialog
         folder_path = filedialog.askdirectory(
-            title="Select Folder Containing Email Files"
+            title="Select Folder Containing Email Files for Batch Analysis"
         )
         
         # If user selected a folder (didn't cancel)
@@ -392,13 +417,13 @@ This email was sent to protect your account security."""
             
     
     def analyze_batch(self):
-        # Get the selected file/folder path from the selection field
+        # Get the selected folder path from the selection field
         source_path = self.file_path_var.get().strip()
         
-        # Validate that a file or folder has been selected
+        # Validate that a folder has been selected
         if not source_path:
-            messagebox.showwarning("Source Required", 
-                                 "Please select an email file or folder using the Browse buttons")
+            messagebox.showwarning("Folder Required", 
+                                 "Please select a folder containing email files using the Browse Folder button")
             return
         
         # Check if the selected path exists
@@ -408,25 +433,30 @@ This email was sent to protect your account security."""
                                f"The selected path does not exist:\n{source_path}")
             return
         
-        # Determine if it's a file or folder and show appropriate message
-        if os.path.isfile(source_path):
-            source_type = "file"
-            status_msg = f"Analyzing email file: {os.path.basename(source_path)}"
-        elif os.path.isdir(source_path):
-            source_type = "folder"
-            status_msg = f"Analyzing folder: {os.path.basename(source_path)}"
-            # Quick count of email files in folder
-            try:
-                email_files = [f for f in os.listdir(source_path) 
-                             if f.lower().endswith(('.txt', '.mbox'))]
-                status_msg += f" ({len(email_files)} email files found)"
-            except:
-                pass
-        else:
-            messagebox.showerror("Invalid Path", 
-                               "The selected path is neither a file nor a folder")
+        # Verify it's a folder (not a file)
+        if not os.path.isdir(source_path):
+            messagebox.showerror("Invalid Selection", 
+                               "Please select a folder, not a file.\n\n"
+                               "For single email analysis, use the 'Individual Analysis' tab.")
             return
         
+        # Quick count of email files in folder
+        status_msg = f"Analyzing folder: {os.path.basename(source_path)}"
+        try:
+            # Get all files in the folder (not just those with specific extensions)
+            # This allows for files without extensions like spam dataset files
+            all_files = [f for f in os.listdir(source_path) 
+                        if os.path.isfile(os.path.join(source_path, f)) and not f.startswith('.')]
+            
+            if not all_files:
+                messagebox.showwarning("No Files Found", 
+                                     f"No files found in:\n{source_path}\n\n"
+                                     "The folder appears to be empty or contains only hidden files.")
+                return
+            status_msg += f" ({len(all_files)} files found)"
+        except Exception as e:
+            messagebox.showerror("Folder Access Error", f"Cannot read folder contents:\n{str(e)}")
+            return
         
         # Prepare the results display area
         self.batch_results_text.config(state=tk.NORMAL)    # Enable editing temporarily
@@ -434,10 +464,7 @@ This email was sent to protect your account security."""
         
         # Show processing message
         self.batch_results_text.insert(tk.END, f"{status_msg}\n")
-        if source_type == "folder":
-            self.batch_results_text.insert(tk.END, "Scanning folder and processing all email files...\n\n")
-        else:
-            self.batch_results_text.insert(tk.END, "Processing email file...\n\n")
+        self.batch_results_text.insert(tk.END, "Scanning folder and processing all email files...\n\n")
         self.root.update()  # Update UI to show the message
         
         try:
