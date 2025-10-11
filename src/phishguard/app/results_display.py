@@ -1,4 +1,4 @@
-# Results Display Module - Simplified Pipeline Integration
+# Results Display Module
 import tkinter as tk
 from typing import Dict, List, Any
 from phishguard.schema import EmailRecord, RuleHit
@@ -25,8 +25,8 @@ class ResultsDisplayManager:
             widget.tag_configure("safe", foreground="green", font=('Arial', 10, 'bold'))
             widget.tag_configure("suspicious", foreground="orange", font=('Arial', 10, 'bold'))
             widget.tag_configure("phishing", foreground="red", font=('Arial', 10, 'bold'))
-            widget.tag_configure("header", foreground="black", font=('Arial', 12, 'bold'))
-            widget.tag_configure("subheader", foreground="black", font=('Arial', 10, 'bold'))
+            widget.tag_configure("header", foreground="white", font=('Arial', 12, 'bold'))
+            widget.tag_configure("subheader", foreground="white", font=('Arial', 10, 'bold'))
 
 # ====================================================================
 #                    UI Entry Points (Setup UI to be displayed)      =
@@ -71,7 +71,7 @@ class ResultsDisplayManager:
         }
 
 # ==============================================================================
-#          Helper Functions                                                   =
+#          Helper Functions                                                    =
 # ==============================================================================
 
     def _determine_classification(self, total_score: float, config: Dict[str, Any]) -> str:
@@ -131,30 +131,106 @@ class ResultsDisplayManager:
             self.results_text.insert(tk.END, f"{classification}\n", "phishing")
             explanation = "This email shows strong indicators of being a phishing attempt."
         
-        self.results_text.insert(tk.END, f"   Risk Score: {score:.1f}\n")
+        # Show risk score with context
+        # Maximum theoretical score is very high (100+), but practical max is around 20-30
+        self.results_text.insert(tk.END, f"   Risk Score: {score:.1f} / 100.0\n")
+        self.results_text.insert(tk.END, f"   Score Guide: <2.0 = Safe | 2.0-10.0 = Suspicious | >10.0 = High Risk\n")
         self.results_text.insert(tk.END, f"   Assessment: {explanation}\n\n")
     
     def _show_detailed_analysis(self, rule_hits: List[RuleHit]):
         # detailed breakdown of all security checks
         self.results_text.insert(tk.END, "Detailed Analysis:\n", "subheader")
-        self.results_text.insert(tk.END, "-" * 30 + "\n\n")
+        self.results_text.insert(tk.END, "-" * 50 + "\n\n")
         
-        # Group rule hits by type
-        failed_rules = [hit for hit in rule_hits if not hit.passed]
-        passed_rules = [hit for hit in rule_hits if hit.passed]
-        
-        if failed_rules:
-            self.results_text.insert(tk.END, "SECURITY CONCERNS DETECTED:\n")
-            for rule in failed_rules:
-                self.results_text.insert(tk.END, f"   - {rule.rule_name.replace('_', ' ').title()}: {rule.details.get('reason', 'Security issue detected')}\n")
-                self.results_text.insert(tk.END, f"     Risk Points: {rule.score_delta}\n")
+        # Display ALL rules explicitly with their results
+        for rule in rule_hits:
+            rule_title = rule.rule_name.replace('_', ' ').title()
+            
+            # Show rule name with status indicator
+            if rule.passed:
+                status_icon = "[PASS]"
+                status_color = "safe"
+            else:
+                status_icon = "[FAIL]"
+                status_color = "phishing"
+            
+            self.results_text.insert(tk.END, f"{status_icon} ", status_color)
+            self.results_text.insert(tk.END, f"{rule_title}\n", "subheader")
+            
+            # Show severity
+            severity_str = str(rule.severity.value) if hasattr(rule.severity, 'value') else str(rule.severity)
+            severity_name = rule.severity.name if hasattr(rule.severity, 'name') else 'UNKNOWN'
+            self.results_text.insert(tk.END, f"   Severity: {severity_name}\n")
+            
+            # Show score impact
+            if rule.score_delta > 0:
+                self.results_text.insert(tk.END, f"   Risk Points Added: +{rule.score_delta:.2f}\n", "phishing")
+            elif rule.score_delta < 0:
+                self.results_text.insert(tk.END, f"   Risk Points Reduced: {rule.score_delta:.2f}\n", "safe")
+            else:
+                self.results_text.insert(tk.END, f"   Risk Points: 0.00\n")
+            
+            # Show detailed information based on rule type
+            details = rule.details or {}
+            
+            # Handle different rule types with specific formatting
+            if rule.rule_name == "lookalike_domain" and not rule.passed:
+                # Special handling for lookalike domain detection
+                self.results_text.insert(tk.END, f"   Detection Type: {details.get('note', 'lookalike_detected')}\n")
+                self.results_text.insert(tk.END, f"   Suspicious Domain: {details.get('candidate', 'N/A')}\n")
+                self.results_text.insert(tk.END, f"   Looks Like: {details.get('protected', 'N/A')}\n")
+                
+                distance = details.get('distance', 'N/A')
+                if distance == "homograph":
+                    self.results_text.insert(tk.END, f"   Attack Type: Homograph (visual spoofing)\n", "phishing")
+                else:
+                    self.results_text.insert(tk.END, f"   Edit Distance: {distance}\n")
+                
+                kind = details.get('kind', 'unknown')
+                self.results_text.insert(tk.END, f"   Found In: {kind}\n")
+                
+            elif rule.rule_name == "keywords" and not rule.passed:
+                # Special handling for keyword detection
+                breakdown = details.get('breakdown', details.get('reason', 'Keywords detected'))
+                self.results_text.insert(tk.END, f"   Keywords Found: {breakdown}\n")
+                
+            elif rule.rule_name == "url_redflags" and not rule.passed:
+                # Special handling for URL red flags
+                breakdown = details.get('breakdown', 'Suspicious URL patterns detected')
+                self.results_text.insert(tk.END, f"   URL Issues: {breakdown}\n")
+                
+            elif rule.rule_name == "attachments" and not rule.passed:
+                # Special handling for risky attachments
+                self.results_text.insert(tk.END, f"   Issue: {details.get('reason', 'Risky attachment detected')}\n")
+                if 'files' in details:
+                    self.results_text.insert(tk.END, f"   Files: {details.get('files', 'N/A')}\n")
+                    
+            elif rule.rule_name == "whitelist":
+                # Special handling for whitelist
+                if rule.passed:
+                    self.results_text.insert(tk.END, f"   Status: Domain is whitelisted\n", "safe")
+                else:
+                    self.results_text.insert(tk.END, f"   Status: {details.get('reason', 'Domain not whitelisted')}\n")
+                    
+            else:
+                # Generic handling for other rules
+                reason = details.get('reason', 'No additional details')
+                self.results_text.insert(tk.END, f"   Details: {reason}\n")
+                
+                # Show any additional details
+                for key, value in details.items():
+                    if key not in ['reason', 'candidate', 'protected', 'distance', 'note', 'kind', 'breakdown', 'files']:
+                        self.results_text.insert(tk.END, f"   {key.replace('_', ' ').title()}: {value}\n")
+            
             self.results_text.insert(tk.END, "\n")
         
-        if passed_rules:
-            self.results_text.insert(tk.END, "SECURITY CHECKS PASSED:\n")
-            for rule in passed_rules:
-                self.results_text.insert(tk.END, f"   - {rule.rule_name.replace('_', ' ').title()}: {rule.details.get('reason', 'No issues detected')}\n")
-            self.results_text.insert(tk.END, "\n")
+        # Add summary at the end
+        self.results_text.insert(tk.END, "-" * 50 + "\n")
+        total_rules = len(rule_hits)
+        passed_rules = sum(1 for r in rule_hits if r.passed)
+        failed_rules = total_rules - passed_rules
+        
+        self.results_text.insert(tk.END, f"Rules Summary: {passed_rules} passed, {failed_rules} failed out of {total_rules} total\n\n")
     
     def _show_security_recommendations(self, classification: str):
         # Actionable security advice
